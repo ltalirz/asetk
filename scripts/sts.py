@@ -2,7 +2,8 @@
 import numpy as np
 #import matplotlib.pyplot as plt
 import argparse
-import format.cp2k as cp2k
+import atk.format.cp2k as cp2k
+import atk.util.progressbar as progressbar
 
 # Define command line parser
 parser = argparse.ArgumentParser(
@@ -83,15 +84,21 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-gaussian = lambda x: 1/(args.sigma * np.sqrt(2*np.pi) \ 
+gaussian = lambda x: 1/(args.sigma * np.sqrt(2*np.pi)) \
                      * np.exp( - x**2 / (2 * args.sigma**2) )
 
 spectrum = cp2k.Spectrum.from_mo(args.levelsfile)
+print("Read spectrum from {f} containing {s} states"\
+        .format(f=args.levelsfile, s=len(spectrum.energies)))
 
 # Reading headers of cube files
 cubes = []
+print("Reading headers of {n} cube files".format(n=len(args.cubes)))
+bar = progressbar.ProgressBar(niter=len(args.cubes))
+
 for fname in args.cubes:
     cubes.append( cp2k.WfnCube.from_file(fname) )
+    bar.iterate()
 
 # Connecting energies with required cube files
 required_cubes = []
@@ -129,17 +136,26 @@ origin[2] = emin
 zrange = r_[origin[2], args.emax, shape[2]]
 
 
-
 # Perform STS calculation
 for cube in required_cubes:
     print("Processing {}".format(cube.filename))
 
-    # We don't want to keep all cubes in memory at once
-    tmp = cp2k.Cube.from_cube(cube)
-    tmp.read_cube_file(tmp.filename,read_data=True)
-    if(not args.psisquared) tmp.data = np.square(tmp.data)
+    # Reading cube files is the most time consuming part of the routine.
+    # Since we need only one plane out of each cube file,
+    # we save it to disk for reuse.
+    planefile = "{f}.dz{d}".format(f=cube.filename,d=args.dz)
+    if( os.isfile(planefile) ):
+        plane = np.genfromtxt(planefile)
 
-    plane = tmp.get_plane_above_atoms(args.dz)
+    else:
+        # We don't want to keep all cubes in memory at once
+        tmp = cp2k.Cube.from_cube(cube)
+        tmp.read_cube_file(tmp.filename,read_data=True)
+        if(not args.psisquared):
+            tmp.data = np.square(tmp.data)
+
+        plane = tmp.get_plane_above_atoms(args.dz)
+        np.savetxt(planefile, plane)
 
     emin = tmp.energy - args.sigma * args.nsigmacut
     emax = tmp.energy + args.sigma * args.nsigmacut

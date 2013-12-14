@@ -5,8 +5,8 @@ Provides a Cube class with reading and writing functions
 
 import numpy as np
 import copy  as cp
-import atomistic.fundamental as fu
-import atomistic.constants as constants
+import atk.atomistic.fundamental as fu
+import atk.atomistic.constants as constants
 
 
 class Cube(object):
@@ -172,7 +172,7 @@ class Cube(object):
             f.write('{:5d}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'.format(Z, 0.0, x, y, z) ) 
 
         # TODO: Make 8-column format according to specs
-        self.data.tofile(f, sep='\n', format='%e'{:12.6f}) 
+        self.data.tofile(f, sep='\n', format='{:12.6f}') 
 
         f.close()
 

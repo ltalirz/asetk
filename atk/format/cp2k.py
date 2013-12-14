@@ -7,8 +7,8 @@ import re
 import copy  as cp
 import numpy as np
 import StringIO
-import atomistic.fundamental as fu
-import atomistic.constants as atc
+import atk.atomistic.fundamental as fu
+import atk.atomistic.constants as atc
 import cube
 
 class Spectrum(object):
@@ -31,10 +31,8 @@ class Spectrum(object):
     @property
     def energies(self):
         """Returns list of energy levels of all spins."""
-        ens = []
-        for el in self.energylevels:
-            ens = ens + el.energies
-        return ens
+        list = [el.energies for el in self.energylevels]
+        return np.concatenate(list)
 
     @property
     def occupations(self):
