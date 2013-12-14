@@ -33,16 +33,21 @@ class Cube(object):
     ALL COORDINATES ARE GIVEN IN ATOMIC UNITS.
     """
 
-    def __init__(self, title=None, comment=None, origin=None, 
-                 cell=None, shape=None, atoms=None, data=None):
+    def __init__(self, filename=None, title=None, comment=None, origin=None, 
+                 atoms=None, data=None):
         """Standard constructur, all parameters default to None."""
+        self.filename = filename
         self.title = title
         self.comment = comment
         self.origin = origin
-        self.cell = cell
-        self.shape = shape
         self.atoms = atoms
         self.data = data
+
+    @classmethod
+    def from_cube(cls, cube):
+        """Creates Cube from Cube object using deep copy"""
+        tmp = cp.deepcopy(cube)
+        return tmp
 
     @classmethod
     def from_file(cls, fname):
@@ -51,6 +56,18 @@ class Cube(object):
         tmp.read_cube_file(fname)
         return tmp
 
+    @property
+    def cell(self):
+        return self.atoms.cell
+
+    @cell.setter
+    def cell(self, c):
+        self.atoms.cell = c
+
+    @property
+    def shape(self):
+        return self.data.shape
+ 
     @property
     def dx(self):
         return self.cell[0] / self.shape[0]
@@ -62,16 +79,6 @@ class Cube(object):
     @property
     def dz(self):
         return self.cell[2] / self.shape[2]
-
-    def copy(self, cube):
-        """Performs deep copy of cube file."""
-        self.title = cube.title
-        self.comment = cube.comment
-        self.origin = cp.copy(cube.origin)
-        self.cell = cp.copy(cube.cell)
-        self.shape = cp.copy(cube.shape)
-        self.atoms = cp.copy(cube.atoms)
-        self.data = cp.copy(cube.data)
 
     def __str__(self):
         text  = "Spectrum containing {} spins\n".format(len(self.energylevels))
@@ -85,6 +92,8 @@ class Cube(object):
         """Reads header and/or data of cube file
         
         """
+        self.filename = fname
+
         f = open(fname, 'r')
         readline = f.readline
 
@@ -95,18 +104,17 @@ class Cube(object):
         line = readline().split()
         natoms = int(line[0])
         b2A = constants.a0 / constants.Angstrom
-        self.origin = [b2A * float(x) for x in line[1:]]
+        self.origin = np.array(line[1:], dtype=float) * b2A
 
+        shape = np.empty(3)
         cell = np.empty((3, 3))
-        shape = []
         for i in range(3):
             n, x, y, z = [float(s) for s in readline().split()]
-            shape.append(n)
-            if n % 2 == 1:
-                n += 1
-            cell[i] = n * b2A * np.array([x, y, z])
-        self.cell = cell
-        self.shape = shape
+            shape[i] = int(n)
+            #if n % 2 == 1:
+            #    n += 1
+            cell[i] = n * np.array([x, y, z])
+        cell = cell * b2A
 
         numbers = np.empty(natoms, int)
         positions = np.empty((natoms, 3))
@@ -116,7 +124,7 @@ class Cube(object):
             positions[i] = [float(s) for s in line[2:]]
 
         positions *= b2A 
-        atoms = fu.Atoms(numbers=numbers, positions=positions, cell=cell)
+        self.atoms = fu.Atoms(numbers=numbers, positions=positions, cell=cell)
 
         if read_data:
             # Note:
@@ -127,9 +135,52 @@ class Cube(object):
 
             # read() pretty much maxes out the disk read speed.
             # split() takes a considerable amount of time.
-            # The conversion to float() is even more expensive.
+            # The conversion to float is even more expensive.
             self.data = np.array(f.read().split(), dtype=float)
-            self.data.reshape(shape)
-            if axes != [0, 1, 2]:
-                self.data = self.data.transpose(axes).copy()
+            self.data = self.data.reshape(shape)
+            #if axes != [0, 1, 2]:
+
+        f.close()
+
+    def write_cube_file(self, fname=None):
+        """Writes Cube object to file
+        
+        """
+        if fname is None:
+            fname = self.filename
+
+        f = open(fname, 'w')
+
+        f.write(self.title)
+        f.write(self.comment)
+
+        A2b = constants.Angstrom / constants.a0 
+        o = self.origin * A2b
+        f.write('{:5d}{:12.6f}{:12.6f}{:12.6f}\n' \
+            .format(len(self.atoms), o[0], o[1], o[2]))
+
+        c = self.cell * A2b
+        for i in range(3): 
+            n = self.shape[i] 
+            d = c[i] / self.shape[i]
+            f.write('{:5d}{:12.6f}{:12.6f}{:12.6f}\n'.format(n, d[0], d[1], d[2]))
+
+
+        positions = self.atoms.get_positions() * A2b
+        numbers = self.atoms.get_atomic_numbers() 
+        for Z, (x, y, z) in zip(numbers, positions): 
+            f.write('{:5d}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'.format(Z, 0.0, x, y, z) ) 
+
+        # TODO: Make 8-column format according to specs
+        self.data.tofile(f, sep='\n', format='%e'{:12.6f}) 
+
+        f.close()
+
+    def get_plane_above_atoms(d):
+        """Returns plane (constant z) at distance d above atoms"""
+        zmax = np.max(atoms.positions[:,2])
+        zplane = zmax + d
+        iplane = int(zplane / np.linalg.norm(self.dz))
+
+        plane = self.data[:,:,iplane]
 

@@ -83,6 +83,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+gaussian = lambda x: 1/(args.sigma * np.sqrt(2*np.pi) \ 
+                     * np.exp( - x**2 / (2 * args.sigma**2) )
 
 spectrum = cp2k.Spectrum.from_mo(args.levelsfile)
 
@@ -111,6 +113,45 @@ for spin, levels in zip(spectrum.spins, spectrum.energylevels):
                if not found:
                    print("Missing cube file for spin {s}, energy {e}"\
                            .format(s=spin+1,e=e))
+
+# Prepare new cube file
+stscube = cp2k.Cube.from_cube(required_cubes[0])
+
+stscube.title = "STS data (z axis = energy)"
+self.comment = "Range [{:4.2f} V, {4.2f} V], delta {:4.3f} V, sigma {:4.3f} V" \
+               .format(args.emin, args.emax, args.de, args.sigma)
+# adjust z-dimension for energy
+shape = self.data.shape
+shape[2] = int( (args.emax - args.emin) / args.de) + 1
+self.data = np.zeros(shape)
+origin[2] = emin
+
+zrange = r_[origin[2], args.emax, shape[2]]
+
+
+
+# Perform STS calculation
+for cube in required_cubes:
+    print("Processing {}".format(cube.filename))
+
+    # We don't want to keep all cubes in memory at once
+    tmp = cp2k.Cube.from_cube(cube)
+    tmp.read_cube_file(tmp.filename,read_data=True)
+    if(not args.psisquared) tmp.data = np.square(tmp.data)
+
+    plane = tmp.get_plane_above_atoms(args.dz)
+
+    emin = tmp.energy - args.sigma * args.nsigmacut
+    emax = tmp.energy + args.sigma * args.nsigmacut
+    imin = (np.abs(zrange-emin)).argmin()
+    imax = (np.abs(zrange-emax)).argmin()
+
+    for i in range(imin,imax+1):
+        stscube.data[:,:,i] += plane * gaussian(tmp.energy - zrange[i])
+
+print("Writing {}".format(args.outfile))
+sts.cube.write_cube_file(args.outfile)
+
 
 #
 #

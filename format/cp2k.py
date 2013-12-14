@@ -101,12 +101,10 @@ class WfnCube(cube.Cube):
     comment line of the cube file
     """
 
-
     def __init__(self, title=None, comment=None, origin=None,
-                 cell=None, shape=None, atoms=None, data=None, 
-                 spin=None, wfn=None, energy=None):
+                 atoms=None, data=None, spin=None, wfn=None, energy=None):
         """Standard constructur, all parameters default to None."""
-        cube.Cube.__init__(self, title,comment,origin,cell,shape,atoms,data)
+        super(WfnCube, self).__init__(title,comment,origin,atoms,data)
         self.spin = spin
         self.wfn  = wfn
         self.energy = energy
@@ -115,12 +113,12 @@ class WfnCube(cube.Cube):
     def from_file(cls, fname):
         """Creates Cube from cube file"""
         tmp = WfnCube()
-        tmp.read_cube_file(fname)
+        super(WfnCube,tmp).read_cube_file(fname)
         return tmp
 
     def read_cube_file(self, fname, read_data=False, v=1):
             """Reads header and/or data of cube file"""
-            cube.Cube.read_cube_file(self, fname, read_data, v)
+            super(WfnCube, self).read_cube_file(fname, read_data, v)
 
             # CP2K stores information on the level/spin index
             # in the comment line
@@ -128,6 +126,5 @@ class WfnCube(cube.Cube):
             match = re.search(commentregex, self.comment)
             self.wfn = int(match.group(1))
             self.spin = int(match.group(2))
-
 
 
