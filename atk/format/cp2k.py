@@ -48,15 +48,15 @@ class Spectrum(object):
         self.spins = cp.copy(spectrum.spins)
 
     def shift(self, de):
-        self.energies -= de
-        self.fermi  -= de
+        for levels in self.energylevels:
+            levels.shift(de)
 
     def __str__(self):
         text  = "Spectrum containing {} spins\n".format(len(self.energylevels))
         for i in range(len(self.energylevels)):
             e = self.energylevels[i]
             s = self.spins[i]
-            text += 'spin {} : {}\n'.format(s, e.__str__())
+            text += 'spin {} : {}\n'.format(s+1, e.__str__())
         return text
 
     def __getitem__(self, index):
@@ -99,19 +99,25 @@ class WfnCube(cube.Cube):
     comment line of the cube file
     """
 
-    def __init__(self, title=None, comment=None, origin=None,
-                 atoms=None, data=None, spin=None, wfn=None, energy=None):
-        """Standard constructur, all parameters default to None."""
+    def __init__(self, title=None, comment=None, origin=None, atoms=None, 
+                 data=None, spin=None, wfn=None, energy=None, occupation=None):
+        """Standard constructor, all parameters default to None.
+        
+        energy and occupation are not stored in the cube file,
+        but can be assigned by linking the cube file with the 
+        output from the calculation.
+        """
         super(WfnCube, self).__init__(title,comment,origin,atoms,data)
         self.spin = spin
         self.wfn  = wfn
         self.energy = energy
+        self.occupation = occupation
 
     @classmethod
-    def from_file(cls, fname):
+    def from_file(cls, fname, read_data=False):
         """Creates Cube from cube file"""
         tmp = WfnCube()
-        super(WfnCube,tmp).read_cube_file(fname)
+        tmp.read_cube_file(fname, read_data=read_data)
         return tmp
 
     def read_cube_file(self, fname, read_data=False, v=1):

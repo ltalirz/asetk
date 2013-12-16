@@ -50,10 +50,10 @@ class Cube(object):
         return tmp
 
     @classmethod
-    def from_file(cls, fname):
+    def from_file(cls, fname, read_data=False):
         """Creates Cube from cube file"""
         tmp = Cube()
-        tmp.read_cube_file(fname)
+        tmp.read_cube_file(fname, read_data=read_data)
         return tmp
 
     @property
@@ -176,11 +176,12 @@ class Cube(object):
 
         f.close()
 
-    def get_plane_above_atoms(d):
+    def get_plane_above_atoms(self, d):
         """Returns plane (constant z) at distance d above atoms"""
-        zmax = np.max(atoms.positions[:,2])
+        zmax = np.max(self.atoms.positions[:,2])
         zplane = zmax + d
         iplane = int(zplane / np.linalg.norm(self.dz))
 
-        plane = self.data[:,:,iplane]
+        return self.data[:,:,iplane]
+
 

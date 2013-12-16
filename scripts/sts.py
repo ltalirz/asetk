@@ -4,6 +4,7 @@ import numpy as np
 import argparse
 import atk.format.cp2k as cp2k
 import atk.util.progressbar as progressbar
+import os.path
 
 # Define command line parser
 parser = argparse.ArgumentParser(
@@ -50,7 +51,7 @@ parser.add_argument(
     help='Bias step for STS [V].')
 parser.add_argument(
     '--sigma',
-    default=+0.2,
+    default=+0.075,
     type=float,
     help='sigma of Gaussian broadening [V]. FWHM = 2.355 sigma.')
 parser.add_argument(
@@ -65,10 +66,12 @@ parser.add_argument(
     type=float,
     help='The height above the topmost atom, where to extract the plane.')
 parser.add_argument(
-    '--vac',
-    default=0.0,
-    metavar='0.0 [eV]',
-    help='The vacuum level. If specified, energies are given wrt the vacuum level.')
+    '--eref',
+    default=None,
+    metavar='reference energy',
+    type=float,
+    help='By default, Fermi is taken as zero-energy reference. With this option\
+          it is possible to define a different reference')
 parser.add_argument(
     '--normalize',
     default=False,
@@ -88,12 +91,20 @@ gaussian = lambda x: 1/(args.sigma * np.sqrt(2*np.pi)) \
                      * np.exp( - x**2 / (2 * args.sigma**2) )
 
 spectrum = cp2k.Spectrum.from_mo(args.levelsfile)
-print("Read spectrum from {f} containing {s} states"\
-        .format(f=args.levelsfile, s=len(spectrum.energies)))
+print("Read spectrum from {f}".format(f=args.levelsfile))
+print(spectrum)
+
+if args.eref is not None:
+    spectrum.shift(-args.eref)
+    print("Taking {s} eV as zero energy reference.".format(s=args.eref))
+else:
+    for spin, levels in zip(spectrum.spins, spectrum.energylevels):
+        levels.shift(-levels.fermi)
+    print("Fermi energy is taken as zero energy reference.")
 
 # Reading headers of cube files
 cubes = []
-print("Reading headers of {n} cube files".format(n=len(args.cubes)))
+print("\nReading headers of {n} cube files".format(n=len(args.cubes)))
 bar = progressbar.ProgressBar(niter=len(args.cubes))
 
 for fname in args.cubes:
@@ -103,58 +114,67 @@ for fname in args.cubes:
 # Connecting energies with required cube files
 required_cubes = []
 for spin, levels in zip(spectrum.spins, spectrum.energylevels):
-    for index, e in enumerate(levels.energies):
+    for index, l in enumerate(levels.levels):
+        e = l.energy
+        o = l.occupation
         # If we need the cube file for this level..
         if e >= args.emin - args.sigma * args.nsigmacut and \
            e <= args.emax + args.sigma * args.nsigmacut:
 
                found = False
                for cube in cubes:
+                   #print "ind {}  {} spin {} {}".format(cube.wfn,index,cube.spin,spin)
                    if cube.wfn == index and cube.spin == spin + 1:
                        cube.energy = e
+                       cube.occupation = o
                        required_cubes.append(cube)
+                       found = True
 
-                       print("Found cube file for spin {s}, energy {e}"\
-                             .format(s=spin+1,e=e))
+                       print("Found cube file for spin {s}, energy {e}, occupation {o}"\
+                             .format(s=spin+1,e=e, o=o))
                        break
                if not found:
-                   print("Missing cube file for spin {s}, energy {e}"\
-                           .format(s=spin+1,e=e))
+                   print("Missing cube file for spin {s}, energy {e}, occupation {o}"\
+                           .format(s=spin+1,e=e,o=o))
 
 # Prepare new cube file
-stscube = cp2k.Cube.from_cube(required_cubes[0])
+print("\nInitializing STS cube")
+stscube = cp2k.WfnCube.from_file(required_cubes[0].filename, read_data=True)
 
 stscube.title = "STS data (z axis = energy)"
-self.comment = "Range [{:4.2f} V, {4.2f} V], delta {:4.3f} V, sigma {:4.3f} V" \
+stscube.comment = "Range [{:4.2f} V, {:4.2f} V], de {:4.3f} V, sigma {:4.3f} V" \
                .format(args.emin, args.emax, args.de, args.sigma)
 # adjust z-dimension for energy
-shape = self.data.shape
+shape = np.array(stscube.data.shape)
 shape[2] = int( (args.emax - args.emin) / args.de) + 1
-self.data = np.zeros(shape)
-origin[2] = emin
+stscube.data = np.zeros(shape)
+stscube.origin[2] = args.emin
 
-zrange = r_[origin[2], args.emax, shape[2]]
-
+zrange = np.r_[stscube.origin[2], args.emax, shape[2]]
 
 # Perform STS calculation
+print("\nReading data of {n} cube files".format(n=len(required_cubes)))
+bar = progressbar.ProgressBar(niter=len(required_cubes))
+
 for cube in required_cubes:
-    print("Processing {}".format(cube.filename))
 
     # Reading cube files is the most time consuming part of the routine.
     # Since we need only one plane out of each cube file,
     # we save it to disk for reuse.
     planefile = "{f}.dz{d}".format(f=cube.filename,d=args.dz)
-    if( os.isfile(planefile) ):
+    if( os.path.isfile(planefile) ):
         plane = np.genfromtxt(planefile)
 
     else:
         # We don't want to keep all cubes in memory at once
-        tmp = cp2k.Cube.from_cube(cube)
+        tmp = cp2k.WfnCube.from_cube(cube)
         tmp.read_cube_file(tmp.filename,read_data=True)
         if(not args.psisquared):
             tmp.data = np.square(tmp.data)
 
         plane = tmp.get_plane_above_atoms(args.dz)
+        # For STS, the occupation of the level is irrelevant
+        #plane = plane * tmp.occupation
         np.savetxt(planefile, plane)
 
     emin = tmp.energy - args.sigma * args.nsigmacut
@@ -165,58 +185,14 @@ for cube in required_cubes:
     for i in range(imin,imax+1):
         stscube.data[:,:,i] += plane * gaussian(tmp.energy - zrange[i])
 
+    bar.iterate()
+
+#TODO: Normalize, if asked to
+#if args.normalize:
+#   stscube.data /= np.sum(stscube.data)
+
+
 print("Writing {}".format(args.outfile))
 sts.cube.write_cube_file(args.outfile)
 
-
-#
-#
-#
-#if args.rep is not None:
-#    if len(args.rep) == 1:
-#        args.rep = [ args.rep, args.rep]
-#    elif len(args.rep) !=2:
-#        print('Invalid number of replicas requested')
-#
-#def get_energy(filename):
-#    """
-#    Extract energy from filename sts.-1.000.cube
-#    """
-#    e = re.search('(\-?\d+[\.\d]*?)\.cube', filename).group(1)
-#    return float(e) - args.vac
-#
-#def set_lim():
-#    ring_center = [33.6,19.1]
-#    ring_diameter = 38.6
-#    plt.xlim([ ring_center[0]-ring_diameter/2, ring_center[0]+ring_diameter/2])
-#    plt.ylim([ ring_center[1]-ring_diameter/2, ring_center[1]+ring_diameter/2])
-#
-#files = args.cubes
-#fig = plt.figure()
-#
-#for f in files:
-#    plt.clf()
-#    resampled, extent = sts.get_plane(f, deltaz=args.dz, rep=args.rep, nsamples=args.samples)
-#
-#    print('max {m}, min {min}'.format(m=np.max(resampled), min=np.min(resampled)))
-#    cax = plt.imshow(resampled, extent=extent, vmax = args.vmax, cmap='gray')
-#    plt.xlabel('x [$\AA$]')
-#    plt.ylabel('y [$\AA$]')
-#    plt.title('E={e:4.2f} eV'.format(e=get_energy(f)))
-#
-#    cbar = fig.colorbar(cax, format='%.2e')
-#    cbar.set_label('$\\rho(E)$')
-#    set_lim()
-#   
-#    #io.write('atoms.png',atoms)
-#    #model = plt.imread('atoms.png')
-#    #plt.imshow(model, extent=extent)
-#    
-#    outname='slice_{d:.2f}.png'.format(d=get_energy(f))
-#    plt.savefig(outname, dpi=300)
-#    print('Done with {f}'.format(f=f))
-#  
-##plt.show()
-   
- 
     

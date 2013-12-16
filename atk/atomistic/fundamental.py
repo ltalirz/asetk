@@ -73,8 +73,14 @@ class EnergyLevels(object):
 
     @energies.setter
     def energies(self, es):
-        """Sets levels, not specifying occupations."""
-        self.levels = [ EnergyLevels(es[i], None) for i in range(len(ens)) ]
+        """Sets levels, not touching occupations."""
+        if len(self.levels) != len(es):
+            print('Error: Trying to set {le} energies for {le} levels.' \
+                  .format(lo=len(es), le=len(self.levels)))
+            return
+
+        for i in xrange(len(self.levels)):
+            self.levels[i].energy = es[i]
 
     @occupations.setter
     def occupations(self, os):
@@ -103,8 +109,8 @@ class EnergyLevels(object):
         self.levels.sort(key = lambda x: x.energy)
 
     def shift(self, de):
-        self.energies -= de
-        self.fermi  -= de
+        self.energies += de
+        self.fermi  += de
 
     def n_occupied(self):
         """Return number of occupied levels"""
