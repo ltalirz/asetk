@@ -172,12 +172,15 @@ class Cube(object):
             f.write('{:5d}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'.format(Z, 0.0, x, y, z) ) 
 
         # TODO: Make 8-column format according to specs
-        self.data.tofile(f, sep='\n', format='{:12.6f}') 
+        self.data.tofile(f, sep='\n', format='%12.6e') 
 
         f.close()
 
     def get_plane_above_atoms(self, d):
-        """Returns plane (constant z) at distance d above atoms"""
+        """Returns plane given by z=d above topmost atom
+        
+        d should be given in Angstroms.
+        """
         zmax = np.max(self.atoms.positions[:,2])
         zplane = zmax + d
         iplane = int(zplane / np.linalg.norm(self.dz))

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import numpy as np
-#import matplotlib.pyplot as plt
 import argparse
 import atk.format.cp2k as cp2k
 import atk.util.progressbar as progressbar
@@ -110,6 +109,7 @@ bar = progressbar.ProgressBar(niter=len(args.cubes))
 for fname in args.cubes:
     cubes.append( cp2k.WfnCube.from_file(fname) )
     bar.iterate()
+print("")
 
 # Connecting energies with required cube files
 required_cubes = []
@@ -141,16 +141,16 @@ for spin, levels in zip(spectrum.spins, spectrum.energylevels):
 print("\nInitializing STS cube")
 stscube = cp2k.WfnCube.from_file(required_cubes[0].filename, read_data=True)
 
-stscube.title = "STS data (z axis = energy)"
-stscube.comment = "Range [{:4.2f} V, {:4.2f} V], de {:4.3f} V, sigma {:4.3f} V" \
+stscube.title = "STS data (z axis = energy)\n"
+stscube.comment = "Range [{:4.2f} V, {:4.2f} V], de {:4.3f} V, sigma {:4.3f} V\n" \
                .format(args.emin, args.emax, args.de, args.sigma)
 # adjust z-dimension for energy
 shape = np.array(stscube.data.shape)
 shape[2] = int( (args.emax - args.emin) / args.de) + 1
-stscube.data = np.zeros(shape)
+stscube.data = np.zeros(shape, dtype=float)
 stscube.origin[2] = args.emin
 
-zrange = np.r_[stscube.origin[2], args.emax, shape[2]]
+zrange = np.linspace(stscube.origin[2], args.emax, shape[2])
 
 # Perform STS calculation
 print("\nReading data of {n} cube files".format(n=len(required_cubes)))
@@ -162,18 +162,22 @@ for cube in required_cubes:
     # Since we need only one plane out of each cube file,
     # we save it to disk for reuse.
     planefile = "{f}.dz{d}".format(f=cube.filename,d=args.dz)
+
+    # We don't want to keep all cubes in memory at once
+    tmp = cp2k.WfnCube.from_cube(cube)
+
+    plane = None
     if( os.path.isfile(planefile) ):
         plane = np.genfromtxt(planefile)
 
     else:
-        # We don't want to keep all cubes in memory at once
-        tmp = cp2k.WfnCube.from_cube(cube)
         tmp.read_cube_file(tmp.filename,read_data=True)
         if(not args.psisquared):
             tmp.data = np.square(tmp.data)
 
         plane = tmp.get_plane_above_atoms(args.dz)
-        # For STS, the occupation of the level is irrelevant
+        # For STS at zero temperature, 
+        # the occupation of the level in the calculation is irrelevant
         #plane = plane * tmp.occupation
         np.savetxt(planefile, plane)
 
@@ -187,12 +191,13 @@ for cube in required_cubes:
 
     bar.iterate()
 
-#TODO: Normalize, if asked to
-#if args.normalize:
-#   stscube.data /= np.sum(stscube.data)
+# Normalize, if asked to
+if args.normalize:
+   print("Normalizing STS data to 1")
+   stscube.data /= np.sum(stscube.data)
 
 
-print("Writing {}".format(args.outfile))
-sts.cube.write_cube_file(args.outfile)
+print("\nWriting {}".format(args.outfile))
+stscube.write_cube_file(args.outfile)
 
     
