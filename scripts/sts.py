@@ -7,7 +7,7 @@ import os.path
 
 # Define command line parser
 parser = argparse.ArgumentParser(
-    description='Perform Scanning Tunneling Simulation.')
+    description='Performs Scanning Tunneling Spectroscopy Simulation.')
 parser.add_argument('--version', action='version', version='%(prog)s 13.12.2013')
 parser.add_argument(
     'cubes',

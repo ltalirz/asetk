@@ -187,4 +187,56 @@ class Cube(object):
 
         return self.data[:,:,iplane]
 
+    def get_isosurface_above_atoms(self, v, zmin=0, on_grid=False):
+        """Returns z-values of isosurface
 
+        Assumptions:
+        - the tip approaches from above (i.e. along -z)
+        - the values above the isosurface are smaller than below
+        - the tip cannot go below zmin
+        
+        If on_grid is true, the function returns an array of z indices
+        instead of z values. zmin should be the minimum z-index in this case.
+        """
+
+        plane = np.empty(self.shape[0:2])
+        missed = 0
+        dZ = np.linalg.norm(self.dz)
+
+        for i in xrange(self.shape[0]):
+            for j in xrange(self.shape[1]):
+                plane[i,j] = np.argmax(self.data[i,j,::-1] > v)
+
+                if plane[i,j] == 0:
+                    plane[i,j] = zmin
+                    missed = missed + 1
+                elif not on_grid:
+                    greater = self.data[i,j,plane[i,j]]
+                    smaller = self.data[i,j,plane[i,j]+1]
+                    plane[i,j] = dZ * (plane[i,j] \
+                                 + (greater - v)/(greater-smaller))
+
+        ## 1st try, just iterating through the numpy array.
+        ## Turns out this is more than 40x slower than the version above.
+        #for i in xrange(self.shape[0]):
+        #    for j in xrange(self.shape[1]):
+
+        #        miss = True
+        #        last = self.data[i,j, self.shape[2]-1]
+        #        for k in xrange(self.shape[2] -2, -1, -1):
+        #            current = self.data[i,j,k]
+        #            if current >= v and last <= v \
+        #            or current <= v and last >= v:
+
+        #                if on_grid:
+        #                    plane[i,j] = k
+        #                else:
+        #                    # linear interpolation
+        #                    plane[i,j] = dZ * (k + (last - v)/(last - current))
+        #        if miss:
+        #            plane[i,j] = zmin
+        #            missed = missed + 1
+
+        print("{} isovalues replaced by zmin = {}".format(missed,zmin))
+
+        return plane
