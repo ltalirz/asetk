@@ -195,22 +195,29 @@ class Cube(object):
         - the values above the isosurface are smaller than below
         - the tip cannot go below zmin
         
-        If on_grid is true, the function returns an array of z indices
-        instead of z values. zmin should be the minimum z-index in this case.
+        Parameters:
+        - zmin:    minimum z-value [Angstroms] that can be reached by the tip
+        - on_grid: if true, no interpolation between grid points is performed
         """
 
         plane = np.empty(self.shape[0:2])
         missed = 0
         dZ = np.linalg.norm(self.dz)
+        nZ = self.shape[2]
 
         for i in xrange(self.shape[0]):
             for j in xrange(self.shape[1]):
+                # argmax returns index of first occurence of maximum value
                 plane[i,j] = np.argmax(self.data[i,j,::-1] > v)
+                # correcting for reversing the direction
+                plane[i,j] = nZ - plane[i,j] - 1 
 
-                if plane[i,j] == 0:
+                if plane[i,j] == nZ -1 or plane[i,j] * dZ < zmin:
                     plane[i,j] = zmin
                     missed = missed + 1
-                elif not on_grid:
+                elif on_grid:
+                    plane[i,j] *= dZ
+                else:
                     greater = self.data[i,j,plane[i,j]]
                     smaller = self.data[i,j,plane[i,j]+1]
                     plane[i,j] = dZ * (plane[i,j] \

@@ -87,10 +87,13 @@ for fname in args.stmcubes:
 
     for v,kind in jobs:
         planefile = None
+        header = "STM simulation based on " + fname
         if kind == 'h':
             planefile = "{f}.dz{d}".format(f=fname,d=v)
+            header += ", z = {v} [A]".format(v=v)
         elif kind == 'i':
             planefile = "{f}.iso{d}".format(f=fname,d=v)
+            header += ", isovalue {v}, zmin {z} [A]".format(v=v, z=args.zmin)
          
         plane = None
         if kind == 'h':
@@ -99,21 +102,21 @@ for fname in args.stmcubes:
             plane = c.get_isosurface_above_atoms(v, zmin=args.zmin)
 
         print("\nWriting {} ".format(planefile))
-        np.savetxt(planefile, plane)
+        np.savetxt(planefile, plane, header=header)
 
         if args.plot:
             plotfile = planefile + str('.png')
-            print("\nPlotting into {} ".format(plotfile))
+            print("Plotting into {} ".format(plotfile))
             fig = plt.figure()
 
             plane, extent = resample(plane, c)
-            cax = plt.imshow(plane, extent=extent)
+            cax = plt.imshow(plane, extent=extent, cmap='gray')
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')
 
             if kind == 'h':
-                cbar = fig.colorbar(cax, format='%.2e')
-                cbar.set_label('$|\psi|^2$ $[ev/a_0^2]$')
+                cbar = fig.colorbar(cax, format='%.1e')
+                cbar.set_label('$|\psi|^2$ $[e/a_0^2]$')
             elif kind == 'i':
                 cbar = fig.colorbar(cax, format='%.2f')
                 cbar.set_label('z [$\AA$]')
@@ -121,43 +124,3 @@ for fname in args.stmcubes:
             plt.savefig(plotfile, dpi=200)
 
 
-
-
-#    emin = tmp.energy - args.sigma * args.nsigmacut
-#    emax = tmp.energy + args.sigma * args.nsigmacut
-#    imin = (np.abs(zrange-emin)).argmin()
-#    imax = (np.abs(zrange-emax)).argmin()
-#
-#    for i in range(imin,imax+1):
-#        stscube.data[:,:,i] += plane * gaussian(tmp.energy - zrange[i])
-#
-#    bar.iterate()
-#
-#stscube.title = "STS data (z axis = energy)\n"
-#stscube.comment = "Range [{:4.2f} V, {:4.2f} V], de {:4.3f} V, sigma {:4.3f} V\n" \
-#               .format(args.emin, args.emax, args.de, args.sigma)
-## adjust z-dimension for energy
-#shape = np.array(stscube.data.shape)
-#shape[2] = int( (args.emax - args.emin) / args.de) + 1
-#stscube.data = np.zeros(shape, dtype=float)
-#stscube.origin[2] = args.emin
-#
-#zrange = np.linspace(stscube.origin[2], args.emax, shape[2])
-#
-## Perform STS calculation
-#print("\nReading data of {n} cube files".format(n=len(required_cubes)))
-#bar = progressbar.ProgressBar(niter=len(required_cubes))
-#
-#for cube in required_cubes:
-#
-#
-## Normalize, if asked to
-#if args.normalize:
-#   print("Normalizing STS data to 1")
-#   stscube.data /= np.sum(stscube.data)
-#
-#
-#print("\nWriting {}".format(args.outfile))
-#stscube.write_cube_file(args.outfile)
-#
-#    
