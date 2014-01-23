@@ -22,11 +22,17 @@ class Spectrum(object):
 
     @classmethod
     def from_mo(cls, fname):
-        """Creates Spectrum from cube file"""
+        """Creates Spectrum from list of molecular occupations"""
         tmp = Spectrum()
         tmp.read_from_mo(fname)
         return tmp
 
+    @classmethod
+    def from_output(cls, fname):
+        """Creates Spectrum from CP2K output"""
+        tmp = Spectrum()
+        tmp.read_from_output(fname)
+        return tmp
 
     @property
     def energies(self):
@@ -63,6 +69,7 @@ class Spectrum(object):
         return self.levels[index]
 
     def read_from_mo(self, fname):
+        """Reads Spectrum from list of molecular occupations"""
         s = open(fname, 'r').read()
 
         lineregex='[^\r\n]*\r?\n'
@@ -90,6 +97,10 @@ class Spectrum(object):
 
                 spin = spin + 1
 
+    def read_from_output(self, fname):
+        """Reads Spectrum from CP2K output"""
+
+        # TO IMPLEMENT (may copy from old cp2k module)
         
 
 class WfnCube(cube.Cube):
