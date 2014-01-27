@@ -48,9 +48,11 @@ class Dispersion:
         for i in range(len(self.energylevels)):
             e = self.energylevels[i]
             k = self.kvectors[i]
-            w = self.weights[i]
-            text += 'k = ({:6.3f}, {:6.3f}, {:6.3f}), w = {} : {}\n'\
-                    .format(k[0], k[1], k[2], w, e.__str__())
+            text += 'k = ({:6.3f}, {:6.3f}, {:6.3f})'.format(k[0], k[1], k[2])
+            if self.weights:
+                w = self.weights[i]
+                text += ', w = {}'.format(w)
+            text += ' : {}\n'.format(e.__str__())
         return text
 
     def __getitem__(self, index):
@@ -65,10 +67,10 @@ class Spectrum(object):
         self.dispersions = [ Dispersion(energylevels) ]
 
     @classmethod
-    def from_output(cls, fname):
+    def from_output(cls, fname, mode=None):
         """Creates Spectrum from Yambo output file"""
         tmp = Spectrum()
-        tmp.read_from_output(fname)
+        tmp.read_from_output(fname, mode)
         return tmp
 
 
@@ -106,15 +108,21 @@ class Spectrum(object):
     def __getitem__(self, index):
         return self.levels[index]
 
-    def read_from_output(self, fname):
+    def read_from_output(self, fname, mode=None):
         s = open(fname, 'r').read()
 
         floatregex = '-?\d+\.\d+'
         lineregex='[^\r\n]*\r?\n'
         #blanklineregex='(?:^\s*$)'
-        kptregex = 'X\* K.*?: ({f})\s*({f})\s*({f}).*?weight\s*({f}){l}(.*?)[\*\[]'\
-                    .format(f=floatregex,l=lineregex)
-        fermiregex='Fermi Level.*?:(\s*[\-\d\.]+)'
+
+        if mode == 'DFT' or mode == None:
+            kptregex = 'X\* K.*?: ({f})\s*({f})\s*({f}).*?weight\s*({f}){l}(.*?)[\*\[]'\
+                        .format(f=floatregex,l=lineregex)
+            fermiregex='Fermi Level.*?:(\s*[\-\d\.]+)'
+        elif mode == 'QP':
+            kptregex = 'Q?P \[eV\].*?:\s*({f})\s+({f})\s+({f})(.*?)[Q\[]'\
+                        .format(f=floatregex)
+
 
         self.spins=[]
         self.dispersions=[]
@@ -124,23 +132,42 @@ class Spectrum(object):
 
             disp = Dispersion()
             matches=re.findall(kptregex, s, re.DOTALL)
-            fermi = float(re.search(fermiregex, s).group(1))
 
-            energylevels = []
-            kvectors = []
-            weights = []
+            if mode == 'DFT' or mode == None:
 
-            for match in matches:
-                kx, ky, kz, weight, ldata  = match
-                kvectors.append( np.array([kx, ky, kz], dtype=float) )
-                weights.append( float(weight) )
+                fermi = float(re.search(fermiregex, s).group(1))
+                energylevels = []
+                kvectors = []
+                weights = []
 
-                energies = re.findall('({f})'.format(f=floatregex), ldata, re.DOTALL)
-                energies = np.array(energies)
-                levels = fu.EnergyLevels(energies=energies,occupations=None, fermi=fermi)
-                energylevels.append(levels)
-             
-            disp = Dispersion(energylevels=energylevels, kvectors=kvectors, weights=weights)
+                for match in matches:
+                    kx, ky, kz, weight, ldata  = match
+                    kvectors.append( np.array([kx, ky, kz], dtype=float) )
+                    weights.append( float(weight) )
+                    energies = re.findall('({f})'.format(f=floatregex), ldata, re.DOTALL)
+
+
+                    energies = np.array(energies, dtype=float)
+                    levels = fu.EnergyLevels(energies=energies,occupations=None, fermi=fermi)
+                    energylevels.append(levels)
+                 
+                disp = Dispersion(energylevels=energylevels, kvectors=kvectors, weights=weights)
+
+            elif mode == 'QP':
+
+                energylevels = []
+                kvectors = []
+
+                for match in matches:
+                    kx, ky, kz, ldata  = match
+                    kvectors.append( np.array([kx, ky, kz], dtype=float) )
+                    energies = re.findall('E=\s*({f})'.format(f=floatregex), ldata, re.DOTALL)
+
+                    energies = np.array(energies, dtype=float)
+                    levels = fu.EnergyLevels(energies=energies)
+                    energylevels.append(levels)
+                 
+                disp = Dispersion(energylevels=energylevels, kvectors=kvectors)
 
             self.dispersions.append(disp)
             self.spins.append(spin)

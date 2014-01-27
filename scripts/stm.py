@@ -67,6 +67,12 @@ parser.add_argument(
     default=False,
     type=bool,
     help='Whether to plot the resulting isosurface using matplotlib.')
+parser.add_argument(
+    '--plotrange',
+    metavar='plotrange [Angstroms]',
+    default=None,
+    type=float,
+    help='Limiting color-range for plot of constant-current STM')
 
 args = parser.parse_args()
 
@@ -109,8 +115,14 @@ for fname in args.stmcubes:
             print("Plotting into {} ".format(plotfile))
             fig = plt.figure()
 
+            vmin = None
+            if kind == 'i' and args.plotrange:
+                vmin = np.max(plane) - args.plotrange
+                plane = plane - vmin
+                vmin = 0
+
             plane, extent = resample(plane, c)
-            cax = plt.imshow(plane, extent=extent, cmap='gray')
+            cax = plt.imshow(plane, extent=extent, cmap='gray', vmin=vmin)
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')
 
