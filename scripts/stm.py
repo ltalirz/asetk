@@ -9,7 +9,7 @@ import matplotlib.mlab as mlab
 from atk.format.cube import Cube
 import sys
 
-def resample(plane, cube, nsamples=1000):
+def resample(plane, cube, rep=None, nsamples=1000):
     """Resamples data in cartesian coordinates.
 
     Assumptions:
@@ -18,6 +18,11 @@ def resample(plane, cube, nsamples=1000):
     nx,ny,nz    = cube.data.shape
     dx,dy,dz    = cube.atoms.cell / cube.data.shape
 
+    if rep:
+        plane = np.tile(plane, rep)
+        nx *= rep[0]
+        ny *= rep[1]
+        
     plane = plane.flatten()
     pos   = [ i*dx+j*dy for i in range(nx) for j in range(ny) ]
     x,y,z = zip(*pos)
@@ -31,6 +36,27 @@ def resample(plane, cube, nsamples=1000):
     resampled = resampled[::-1,:]
 
     return [resampled, extent]
+
+
+def replicate(data, extent, nx, ny):
+
+    tmp1 = data
+    for i in range(nx):
+        tmp1 = np.concatenate([tmp1,data], 0)
+
+    extent[0] *= nx + 1
+    extent[1] *= nx + 1
+
+
+    tmp2 = tmp1
+    for i in range(nx):
+        tmp2 = np.concatenate([tmp2,tmp1], 1)
+
+    extent[2] *= ny + 1
+    extent[3] *= ny + 1
+
+    return [tmp2, extent]
+
 
 # Define command line parser
 parser = argparse.ArgumentParser(
@@ -48,7 +74,7 @@ parser.add_argument(
     metavar='heights',
     type=float,
     help='Tip-height above the topmost atom for an STM-image in constant-z\
-          mode. 3-4 Angstroms is typically reasonable.')
+          mode. 3 Angstroms is typically reasonable.')
 parser.add_argument(
     '--isovalues',
     nargs='+',
@@ -73,6 +99,14 @@ parser.add_argument(
     default=None,
     type=float,
     help='Limiting color-range for plot of constant-current STM')
+parser.add_argument(
+    '--plotrep',
+    default=None,
+    nargs='+',
+    type=int, 
+    metavar='nx ny',
+    help='Number of replica along x and y.\
+          If just one number is specified, it is taken for both x and y.')
 
 args = parser.parse_args()
 
@@ -85,6 +119,12 @@ if args.isovalues:
 if not jobs:
     print("No isovalues/heights specified. Exiting...")
     sys.exit()    
+
+if args.plotrep is not None:
+    if len(args.plotrep) == 1:
+        args.plotrep = [ args.plotrep, args.plotrep]
+    elif len(args.plotrep) !=2:
+        print('Invalid number of replicas requested')
 
 # Iterate over supplied cube files
 for fname in args.stmcubes:
@@ -121,7 +161,9 @@ for fname in args.stmcubes:
                 plane = plane - vmin
                 vmin = 0
 
-            plane, extent = resample(plane, c)
+            # replicate and resample
+            plane, extent = resample(plane, c, rep=args.plotrep)
+
             cax = plt.imshow(plane, extent=extent, cmap='gray', vmin=vmin)
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')
@@ -133,6 +175,12 @@ for fname in args.stmcubes:
                 cbar = fig.colorbar(cax, format='%.2f')
                 cbar.set_label('z [$\AA$]')
 
-            plt.savefig(plotfile, dpi=200)
+            plt.savefig(plotfile, dpi=300)
 
+            resfile = planefile + str('.res')
+            print("Saving resampled data used for plotting to {} "\
+                    .format(resfile))
+            header += "\nDimensions after resampling: {:.3f} < x < {:.3f}, {:.3f} < y < {:.3f} [A]"\
+                    .format(extent[0], extent[1], extent[2], extent[3])
+            np.savetxt(resfile, plane, header=header)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+e4!/usr/bin/env python
 import numpy as np
 import argparse
 import atk.format.cp2k as cp2k
@@ -76,13 +76,6 @@ parser.add_argument(
     default=False,
     type=bool,
     help='Whether to normalize the STS intensity to 1.')
-#parser.add_argument(
-#    '--rep',
-#    default=None,
-#    nargs='+',
-#    type=int, 
-#    metavar='nx ny',
-#    help='Number of replica along x and yi. If just one number is specified, it is taken for both x and y.')
 
 args = parser.parse_args()
 
