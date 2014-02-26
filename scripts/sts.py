@@ -1,4 +1,4 @@
-e4!/usr/bin/env python
+#!/usr/bin/env python
 import numpy as np
 import argparse
 import atk.format.cp2k as cp2k
@@ -12,67 +12,70 @@ parser.add_argument('--version', action='version', version='%(prog)s 13.12.2013'
 parser.add_argument(
     'cubes',
     nargs='+',
-    metavar='cube files',
+    metavar='WILDCARD',
     help='The cube files to be sliced')
 parser.add_argument(
     '--psisquared',
-    metavar='True/False',
+    metavar='BOOL',
     default=False,
     type=bool,
     help='True, if cube files contain the density (psi squared).')
 parser.add_argument(
     '--levelsfile',
-    metavar='levels file',
+    metavar='FILENAME',
     required=True,
     help='File containing the energy levels.')
 parser.add_argument(
     '--outfile',
-    metavar='output file',
+    metavar='FILENAME',
     default='sts.cube',
     help='Name of cube file for STS simulation.')
 parser.add_argument(
     '--emin',
-    metavar='value',
+    metavar='ENERGY',
     default=-3.0,
     type=float,
-    help='Minimum bias for STS [V].')
+    help='Minimum bias for STS [eV].')
 parser.add_argument(
     '--emax',
-    metavar='value',
+    metavar='ENERGY',
     default=+3.0,
     type=float,
-    help='Maximum bias for STS [V].')
+    help='Maximum bias for STS [eV].')
 parser.add_argument(
     '--de',
-    metavar='value',
+    metavar='ENERGY',
     default=+0.01,
     type=float,
-    help='Bias step for STS [V].')
+    help='Bias step for STS [eV].')
+parser.add_argument(
+    '--eref',
+    metavar='ENERGY',
+    default=None,
+    type=float,
+    help='By default, Fermi is taken as zero-energy reference. With this option\
+          it is possible to define a different reference')
 parser.add_argument(
     '--sigma',
+    metavar='ENERGY',
     default=+0.075,
     type=float,
-    help='sigma of Gaussian broadening [V]. FWHM = 2.355 sigma.')
+    help='sigma of Gaussian broadening [eV]. FWHM = 2.355 sigma.')
 parser.add_argument(
     '--nsigmacut',
+    metavar='INT',
     default=5,
     type=int,
     help='At a given energy E, consider levels within window [E-nsigmacut*sigma,E+nsigmacut*sigma].')
 parser.add_argument(
     '--dz',
-    metavar='delta z',
+    metavar='DISTANCE',
     default=2.5,
     type=float,
     help='The height above the topmost atom, where to extract the plane.')
 parser.add_argument(
-    '--eref',
-    default=None,
-    metavar='reference energy',
-    type=float,
-    help='By default, Fermi is taken as zero-energy reference. With this option\
-          it is possible to define a different reference')
-parser.add_argument(
     '--normalize',
+    metavar='BOOL',
     default=False,
     type=bool,
     help='Whether to normalize the STS intensity to 1.')
