@@ -43,10 +43,23 @@ class Spectrum(object):
     @property
     def occupations(self):
         """Returns list of level occupations of all spins."""
-        os = []
+        os = np.array([])
         for el in self.energylevels:
-            os = os + el.occupations
+            os = np.concatenate( (os, el.occupations))
         return os
+
+    @property
+    def fermi(self):
+        """Returns Fermi energy."""
+        fermis = [el.fermi for el in self.energylevels]
+
+        fermi = np.unique(fermis)
+
+        if len( np.unique(fermis) ) != 1:
+            print "There are Fermi energies {}".format(fermis)
+            print "Using the mean {}".format(np.mean(fermis))
+
+        return np.mean(fermis)
 
     def copy(self, spectrum):
         """Performs deep copy of spectrum."""
@@ -101,6 +114,50 @@ class Spectrum(object):
         """Reads Spectrum from CP2K output"""
 
         # TO IMPLEMENT (may copy from old cp2k module)
+
+    def dos(self, sigma = 0.05, deltaE = 0.005, nsigma = 10):
+        """
+        Returns numpy array [energy, density of states]
+
+        Parameters
+        ----------
+        sigma :  Width of Gaussian broadening [eV]
+        deltaE :  spacing of energy grid [eV]
+        nsigma : Gaussian distribution is cut off after nsigma*sigma
+        """
+
+        if sigma/deltaE < 10:
+            print "Warning: sigma/deltaE < 10. Gaussians might not be sampled well."
+        gaussian = lambda x: 1/(np.sqrt(2*np.pi)*sigma) \
+                             * np.exp(-x**2/(2*sigma**2))
+
+        # Tabulate the Gaussian in range sigma * nsigma
+        limit = sigma * nsigma
+        energies = np.r_[-limit:limit:deltaE]
+        gprofile = gaussian(energies)
+
+        # Encoding the discretized energy in the array index i makes the code much faster.
+        energies = self.energies
+        occupations = self.occupations
+        loE=energies[0] - nsigma * sigma
+        hiE=energies[-1] + nsigma * sigma
+        E=np.r_[loE:hiE:deltaE]
+
+        # Create dos of delta-peaks to be folded with Gaussian
+        DOSdelta = np.array([0.0 for j in E])
+        for e, o in zip(energies, occupations):
+            # In order to be able to fold with tabulated Gaussian, we have to place
+            # levels *on* the grid. I.e. level spacing cannot be smaller than deltaE.
+            n = int((e-loE)/deltaE)
+            if o is not None:
+                DOSdelta[n] += o
+            else:
+                DOSdelta[n] += 1
+        # Convolve with gaussian, keeping same dimension
+        # Can be made even faster by using fftconvolve
+        DOS = np.convolve(DOSdelta,gprofile, mode='same')
+ 
+        return np.array([E,DOS])
         
 
 class WfnCube(cube.Cube):
