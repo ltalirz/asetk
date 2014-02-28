@@ -138,21 +138,21 @@ class Spectrum(object):
 
         # Encoding the discretized energy in the array index i makes the code much faster.
         energies = self.energies
-        occupations = self.occupations
         loE=energies[0] - nsigma * sigma
         hiE=energies[-1] + nsigma * sigma
         E=np.r_[loE:hiE:deltaE]
 
         # Create dos of delta-peaks to be folded with Gaussian
         DOSdelta = np.array([0.0 for j in E])
-        for e, o in zip(energies, occupations):
+        for e in energies:
             # In order to be able to fold with tabulated Gaussian, we have to place
             # levels *on* the grid. I.e. level spacing cannot be smaller than deltaE.
             n = int((e-loE)/deltaE)
-            if o is not None:
-                DOSdelta[n] += o
-            else:
-                DOSdelta[n] += 1
+            # Note: DOS should be calculated for unoccupied levels as well!
+            #if o is not None:
+            #    DOSdelta[n] += o
+            #else:
+            DOSdelta[n] += 1
         # Convolve with gaussian, keeping same dimension
         # Can be made even faster by using fftconvolve
         DOS = np.convolve(DOSdelta,gprofile, mode='same')
