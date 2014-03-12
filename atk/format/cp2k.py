@@ -112,8 +112,51 @@ class Spectrum(object):
 
     def read_from_output(self, fname):
         """Reads Spectrum from CP2K output"""
+        s = open(fname, 'r').read()
 
-        # TO IMPLEMENT (may copy from old cp2k module)
+        # Format in CP2K output
+        if not re.search('Eigenvalues of the occupied subspace', s):
+            print("Error: Unable to parse CP2K output file")
+            return
+
+        # We are interested only in the last run (result of calculation)
+        rundatas = re.findall(
+                'Eigenvalues of the occupied subspace .*?HOMO', s, re.DOTALL)
+        rundata = rundatas[-1]
+
+        # each spin may have occupied & unoccupied levels + fermi energy
+        occupieddatas = re.findall(
+                'Eigenvalues of the occupied subspace spin([\.\-\d\s]*)', 
+                rundata, re.DOTALL)
+        #unoccupieddatas = re.findall('Lowest Eigenvalues of the unoccupied subspace spin.*?iterations([\.\-\d\s]*)', rundata, re.DOTALL)
+        unoccupieddatas = re.findall(
+                'Lowest Eigenvalues of the unoccupied subspace spin(.*?\d{8}[\.\-\d\s]*)',
+                rundata, re.DOTALL)
+        levelregex = '\-?\d\.\d{8}'
+
+        fermidatas = re.findall('Fermi Energy.*', rundata)
+        fermiregex = '\-?\d\.\d{6}'
+
+        self.energylevels = []
+        self.spins = []
+        for i in range(0, len(occupieddatas)):
+            # If we have unoccupied levels...
+            if len(unoccupieddatas) == len(occupieddatas):
+                E = np.array(
+                        re.findall(levelregex, occupieddatas[i] + unoccupieddatas[i]), 
+                        dtype = float)
+            else:
+                E = np.array(re.findall(levelregex, occupieddatas[i]), dtype = float)
+            E = E * atc.Ha / atc.eV
+            fermi = float(re.search(fermiregex, fermidatas[i]).group(0))
+
+            spin = str(re.search('\s*(\d)',occupieddatas[i]).group(1))
+            spin = int(spin) - 1
+
+            levels = fu.EnergyLevels(energies=E,fermi=fermi)
+            self.energylevels.append(levels)
+            self.spins.append(spin)
+
 
     def dos(self, sigma = 0.05, deltaE = 0.005, nsigma = 10):
         """

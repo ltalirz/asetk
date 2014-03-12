@@ -75,17 +75,23 @@ parser.add_argument(
     help='The height above the topmost atom, where to extract the plane.')
 parser.add_argument(
     '--normalize',
-    metavar='BOOL',
+    dest='normalize',
+    action='store_true',
     default=False,
-    type=bool,
-    help='Whether to normalize the STS intensity to 1.')
+    help='If provided, the STS intensity is normalized to 1.')
 
 args = parser.parse_args()
 
 gaussian = lambda x: 1/(args.sigma * np.sqrt(2*np.pi)) \
                      * np.exp( - x**2 / (2 * args.sigma**2) )
 
-spectrum = cp2k.Spectrum.from_mo(args.levelsfile)
+lfname, lfext = os.path.splitext(args.levelsfile)
+if lfext == '.MOLog':
+    spectrum = cp2k.Spectrum.from_mo(args.levelsfile)
+else:
+    spectrum = cp2k.Spectrum.from_output(args.levelsfile)
+
+
 print("Read spectrum from {f}".format(f=args.levelsfile))
 print(spectrum)
 
@@ -186,9 +192,10 @@ for cube in required_cubes:
         stscube.data[:,:,i] += plane * gaussian(tmp.energy - zrange[i])
 
     bar.iterate()
+print("\n")
 
 # Normalize, if asked to
-if args.normalize:
+if args.normalize is True:
    print("Normalizing STS data to 1")
    stscube.data /= np.sum(stscube.data)
 
