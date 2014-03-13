@@ -68,11 +68,11 @@ parser.add_argument(
     type=int,
     help='At a given energy E, consider levels within window [E-nsigmacut*sigma,E+nsigmacut*sigma].')
 parser.add_argument(
-    '--dz',
+    '--height',
     metavar='DISTANCE',
     default=2.5,
     type=float,
-    help='The height above the topmost atom, where to extract the plane.')
+    help='The height [Angstroms] above the topmost atom, where to extract the plane.')
 parser.add_argument(
     '--normalize',
     dest='normalize',
@@ -126,7 +126,7 @@ for spin, levels in zip(spectrum.spins, spectrum.energylevels):
                found = False
                for cube in cubes:
                    #print "ind {}  {} spin {} {}".format(cube.wfn,index,cube.spin,spin)
-                   if cube.wfn == index and cube.spin == spin + 1:
+                   if cube.wfn == index+1 and cube.spin == spin + 1:
                        cube.energy = e
                        cube.occupation = o
                        required_cubes.append(cube)
@@ -163,7 +163,7 @@ for cube in required_cubes:
     # Reading cube files is the most time consuming part of the routine.
     # Since we need only one plane out of each cube file,
     # we save it to disk for reuse.
-    planefile = "{f}.dz{d}".format(f=cube.filename,d=args.dz)
+    planefile = "{f}.z{d}".format(f=cube.filename,d=args.height)
 
     # We don't want to keep all cubes in memory at once
     tmp = cp2k.WfnCube.from_cube(cube)
@@ -177,7 +177,7 @@ for cube in required_cubes:
         if(not args.psisquared):
             tmp.data = np.square(tmp.data)
 
-        plane = tmp.get_plane_above_atoms(args.dz)
+        plane = tmp.get_plane_above_atoms(args.height)
         # For STS at zero temperature, 
         # the occupation of the level in the calculation is irrelevant
         #plane = plane * tmp.occupation
