@@ -247,3 +247,31 @@ class Cube(object):
         print("{} isovalues replaced by zmin = {}".format(missed,zmin))
 
         return plane
+
+    def get_plane(self, dir, i):
+        """Returns plane normal to direction 'dir' at index 'i'"""
+
+        if dir is 'x':
+            return self.data[i, :, :]
+        elif dir is 'y':
+            return self.data[:, i, :]
+        elif dir is 'z':
+            return self.data[:, :, i]
+        else:
+            print("Cannot recognize direction '{}'".format(dir))
+            print("Direction must be 'x', 'y' or 'z'.")
+
+    def get_avg(self, dir):
+        """Returns average value of cube file along direction 'dir'."""
+
+        if dir is 'x':
+            return np.mean(self.data, axis=0)
+        elif dir is 'y':
+            return np.mean(self.data, axis=1)
+        elif dir is 'z':
+            return np.mean(self.data, axis=2)
+        else:
+            print("Cannot recognize direction '{}'".format(dir))
+            print("Direction must be 'x', 'y' or 'z'.")
+
+

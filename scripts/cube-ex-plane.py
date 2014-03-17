@@ -28,16 +28,7 @@ args = parser.parse_args()
 print("Reading cube file {}".format(args.cube))
 c = Cube.from_file(args.cube, read_data=True)
 
-plane = []
-if args.dir is 'x':
-    plane = c.data[args.index, :, :]
-elif args.dir is 'y':
-    plane = c.data[:, args.index, :]
-elif args.dir is 'z':
-    plane = c.data[:, :, args.index]
-else:
-    print("Cannot recognize direction '{}'".format(args.dir))
-    print("Direction must be 'x', 'y' or 'z'.")
+plane = c.get_plane(dir=args.dir, i=args.index)
 
 outfile = '{f}.plane{i}.dat'.format(f=args.cube, i=args.index)
 print("Writing plane data to {}".format(outfile))
