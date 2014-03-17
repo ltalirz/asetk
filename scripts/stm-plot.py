@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
-import os.path
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -38,67 +37,49 @@ def resample(plane, cube, rep=None, nsamples=1000):
     return [resampled, extent]
 
 
-def replicate(data, extent, nx, ny):
-
-    tmp1 = data
-    for i in range(nx):
-        tmp1 = np.concatenate([tmp1,data], 0)
-
-    extent[0] *= nx + 1
-    extent[1] *= nx + 1
-
-
-    tmp2 = tmp1
-    for i in range(nx):
-        tmp2 = np.concatenate([tmp2,tmp1], 1)
-
-    extent[2] *= ny + 1
-    extent[3] *= ny + 1
-
-    return [tmp2, extent]
-
-
 # Define command line parser
 parser = argparse.ArgumentParser(
-    description='Performs Scanning Tunneling Microscopy Simulation.')
-parser.add_argument('--version', action='version', version='%(prog)s 23.12.2013')
+    description='Plots Scanning Tunneling Microscopy Image from Gaussian Cube file.')
+parser.add_argument('--version', action='version', version='%(prog)s 17.03.2014')
 parser.add_argument(
     '--stmcubes',
     nargs='+',
-    metavar='',
+    metavar='FILENAMES',
     help='Cube files containing the local density of states (s-wave tip)\
           or the appropriate matrix elements (general case).')
 parser.add_argument(
     '--heights',
     nargs='+',
-    metavar='heights',
+    metavar='LIST',
     type=float,
     help='Tip-height above the topmost atom for an STM-image in constant-z\
           mode. 3 Angstroms is typically reasonable.')
 parser.add_argument(
     '--isovalues',
     nargs='+',
-    metavar='isovalues',
+    metavar='LIST',
     type=float,
-    help='Value of the isosurface for an STM-image in constant current mode.\
+    help='Values of the isosurface for an STM-image in constant current mode.\
           1e-7 is typically a good start.')
 parser.add_argument(
     '--zmin',
-    metavar='zmin [Angstroms]',
+    metavar='HEIGHT',
     type=float,
     default=0.0,
-    help='Minimum z-height for the tip inr constant-current mode.')
+    help='Minimum z-height [Angstroms] for the tip inr constant-current mode.')
 parser.add_argument(
-    '--plot',
-    default=False,
-    type=bool,
-    help='Whether to plot the resulting isosurface using matplotlib.')
+    '--noplot',
+    dest='plot',
+    action='store_false',
+    default=True,
+    help='Suppress plotting of resulting isosurface using matplotlib.')
 parser.add_argument(
     '--plotrange',
-    metavar='plotrange [Angstroms]',
+    nargs='+',
+    metavar='MIN MAX',
     default=None,
     type=float,
-    help='Limiting color-range for plot of constant-current STM')
+    help='Range of color scale in plot')
 parser.add_argument(
     '--plotrep',
     default=None,
@@ -156,15 +137,20 @@ for fname in args.stmcubes:
             fig = plt.figure()
 
             vmin = None
-            if kind == 'i' and args.plotrange:
-                vmin = np.max(plane) - args.plotrange
-                plane = plane - vmin
-                vmin = 0
+            vmax = None
+            if args.plotrange:
+                vmin = args.plotrange[0]
+                vmax = args.plotrange[1]
+            #if kind == 'i' and args.plotrange:
+            #    vmin = np.max(plane) - args.plotrange
+            #    plane = plane - vmin
+            #    vmin = 0
 
             # replicate and resample
             plane, extent = resample(plane, c, rep=args.plotrep)
 
-            cax = plt.imshow(plane, extent=extent, cmap='gray', vmin=vmin)
+            cax = plt.imshow(plane, extent=extent, 
+                             cmap='gray', vmin=vmin, vmax=vmax)
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')
 
