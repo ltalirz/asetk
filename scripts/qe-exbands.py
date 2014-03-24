@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-# Usage: ./qe-exbands.py qe.out
 # Reads energy levels from qe output and plots (1d) band structure
 # to file "bands.png"
-# Version 24.03.2014
 
 import atk.format.qe as qe
 from sys import argv
@@ -10,11 +8,32 @@ import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pylab as plt
+import argparse
 
-prefix = argv[1]
-window = 4 # window around fermi in eV
+# Define command line parser
+parser = argparse.ArgumentParser(
+    description='Extract and plot (1d) band structure from QE')
+parser.add_argument('--version', action='version', version='%(prog)s 24.03.2014')
+parser.add_argument(
+    'prefix',
+    metavar='STRING', 
+    help='Prefix of .save directory to be read.')
+parser.add_argument(
+    '--plot',
+    metavar='BOOL', 
+    default=True,
+    help='Whether to plot bands to bands.png.')
+parser.add_argument(
+    '--window',
+    metavar='ENERGY',
+    default=3,
+    help='Plot range [-window,window] around Fermi.')
 
-spectrum = qe.Spectrum.from_save(prefix)
+args = parser.parse_args()
+
+prefix = args.prefix
+
+spectrum = qe.Spectrum.from_save(args.prefix)
 dispersion = spectrum.dispersions[0]
 
 data = None
@@ -39,7 +58,8 @@ for i in range(len(dispersion.kpoints)):
     fermi = 0
 
     plt.plot(k,E, 'ko')
-    plt.ylim(fermi - window/2, fermi + window/2)
+    window = [fermi -args.window, fermi+ args.window]
+    plt.ylim(window)
     #plt.xlabel(r'k [$\frac{1}{\AA}$]')
     plt.xlabel(r'k [$\frac{2\pi}{a}$]')
     plt.ylabel('E [eV]')
