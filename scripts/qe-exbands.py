@@ -20,7 +20,7 @@ parser.add_argument(
     help='Prefix of .save directory to be read.')
 parser.add_argument(
     '--plot',
-    metavar='BOOL', 
+    action='store_true',
     default=True,
     help='Whether to plot bands to bands.png.')
 parser.add_argument(
@@ -28,6 +28,11 @@ parser.add_argument(
     metavar='ENERGY',
     default=3,
     help='Plot range [-window,window] around Fermi.')
+parser.add_argument(
+    '--save_bands',
+    action='store_true',
+    default=False,
+    help='Save each band to file b<index>.dat')
 
 args = parser.parse_args()
 
@@ -38,6 +43,9 @@ dispersion = spectrum.dispersions[0]
 
 data = None
 k    = None
+klist = []
+
+
 for i in range(len(dispersion.kpoints)):
     kpt = dispersion.kpoints[i]
     E = kpt.energies
@@ -49,9 +57,11 @@ for i in range(len(dispersion.kpoints)):
     #k = [ kp if kp >= 0 else kp+1 for kp in k]
     if k is None:
         k = [0 for l_ in range(len(E))]
+        klist.append(0)
     else:
         d = np.linalg.norm(dispersion.kvectors[i] - dispersion.kvectors[i-1])
         k += np.array([ d for l_ in range(len(E)) ] )
+        klist.append(d)
 
     #k *= np.pi
     E -= fermi
@@ -72,7 +82,16 @@ for i in range(len(dispersion.kpoints)):
 
 np.savetxt('bands.dat', data, header='#kx  ky  kz  E[eV]', fmt='%.4e %.4e %.4e %.6e')
     
+# alternative: grouping by band
+if args.save_bands:
+    bands = np.array([kpt.energies for kpt in dispersion.kpoints])
+    for i in range(len(bands.T)):
+        line = bands.T[i]
+        fname = "b{:03d}.dat".format(i+1)
+        np.savetxt(fname,  zip(klist, line), header="k   E [eV]")
+
 #plt.show()
+
 
 plt.savefig('bands.png', transparent=True, dpi=150)
 

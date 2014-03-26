@@ -24,7 +24,8 @@ parser.add_argument(
     '--levelsfile',
     metavar='FILENAME',
     required=True,
-    help='File containing the energy levels.')
+    help='File containing the energy levels. Can be either CP2K output\
+          or .MOLog file.')
 parser.add_argument(
     '--outfile',
     metavar='FILENAME',
