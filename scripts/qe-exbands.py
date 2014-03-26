@@ -61,7 +61,7 @@ for i in range(len(dispersion.kpoints)):
     else:
         d = np.linalg.norm(dispersion.kvectors[i] - dispersion.kvectors[i-1])
         k += np.array([ d for l_ in range(len(E)) ] )
-        klist.append(d)
+        klist.append(klist[i-1] + d)
 
     #k *= np.pi
     E -= fermi
