@@ -60,6 +60,7 @@ class Cube(object):
     def cell(self):
         return self.atoms.cell
 
+
     @cell.setter
     def cell(self, c):
         self.atoms.cell = c
@@ -69,16 +70,33 @@ class Cube(object):
         return self.data.shape
  
     @property
+    def nx(self):
+        return self.shape[0]
+
+    @property
+    def ny(self):
+        return self.shape[1]
+
+    @property
+    def nz(self):
+        return self.shape[2]
+
+    @property
     def dx(self):
-        return self.cell[0] / self.shape[0]
+        return self.cell[0] / self.nx
 
     @property
     def dy(self):
-        return self.cell[1] / self.shape[1]
+        return self.cell[1] / self.ny
 
     @property
     def dz(self):
-        return self.cell[2] / self.shape[2]
+        return self.cell[2] / self.nz
+
+    @property
+    def dv(self):
+        """Volume element in Angstrom^3"""
+        return np.dot(self.dx, np.cross(self.dy, self.dz))
 
     def __str__(self):
         text  = "Spectrum containing {} spins\n".format(len(self.energylevels))

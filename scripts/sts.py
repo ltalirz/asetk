@@ -13,13 +13,14 @@ parser.add_argument(
     'cubes',
     nargs='+',
     metavar='WILDCARD',
-    help='The cube files to be sliced')
+    help='Gaussian cube files containing the Kohn-Sham orbitals psi_i \
+          (or |psi_i|^2, see --psisquared).')
 parser.add_argument(
     '--psisquared',
-    metavar='BOOL',
+    dest='psisquared',
+    action='store_true',
     default=False,
-    type=bool,
-    help='True, if cube files contain the density (psi squared).')
+    help='If specified, the cubes are assumed to contain |psi_i|^2.')
 parser.add_argument(
     '--levelsfile',
     metavar='FILENAME',
