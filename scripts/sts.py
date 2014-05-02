@@ -81,6 +81,14 @@ parser.add_argument(
     action='store_true',
     default=False,
     help='If provided, the STS intensity is normalized to 1.')
+parser.add_argument(
+    '--print-weights',
+    metavar='FILENAME',
+    dest='print_weights',
+    default=None,
+    help='If specified, the (relative) weights   \
+            w_i = \int |\psi_i^2(x,y,z_0)| dx dy \
+          of all states are printed to file.')
 
 args = parser.parse_args()
 
@@ -156,6 +164,10 @@ stscube.origin[2] = args.emin
 
 zrange = np.linspace(stscube.origin[2], args.emax, shape[2])
 
+if args.print_weights:
+    wfile = open(args.print_weights, 'w')
+    wfile.write('#index  spin   energy[eV]   weight[a.u.]\n')
+
 # Perform STS calculation
 print("\nReading data of {n} cube files".format(n=len(required_cubes)))
 bar = progressbar.ProgressBar(niter=len(required_cubes))
@@ -185,6 +197,11 @@ for cube in required_cubes:
         #plane = plane * tmp.occupation
         np.savetxt(planefile, plane)
 
+    if args.print_weights:
+        weight = np.sum( np.sum(plane) )
+        wfile.write('{:6d} {:5d} {:10.3f} {:14.4e}\n'.\
+                    format(cube.wfn, cube.spin, cube.energy, weight))
+
     emin = tmp.energy - args.sigma * args.nsigmacut
     emax = tmp.energy + args.sigma * args.nsigmacut
     imin = (np.abs(zrange-emin)).argmin()
@@ -195,6 +212,9 @@ for cube in required_cubes:
 
     bar.iterate()
 print("\n")
+
+if args.print_weights:
+    wfile.close()
 
 # Normalize, if asked to
 if args.normalize is True:
