@@ -118,7 +118,6 @@ class Spectrum(object):
 
     def read_from_save(self, prefix):
         """Reads Spectrum from QE save directory"""
-        dispersion = Dispersion()
 
         savedir = prefix + '.save'
         if not os.path.exists(savedir):
@@ -127,6 +126,9 @@ class Spectrum(object):
 
         os.chdir(savedir)
         dataxml = open('data-file.xml', 'r').read()
+
+        nspinregex = '<NUMBER_OF_SPIN_COMPONENTS.*?>\s*(\d+)'
+        nspin = int( re.search(nspinregex, dataxml, re.DOTALL).group(1) )
 
         # should be able to match scientific and non-scientific notation
         floatregex = '-?\d+\.\d+(?:[Ee][+\-]?\d+)?'
@@ -147,38 +149,53 @@ class Spectrum(object):
                 .format(f=floatregex)
         kptdatas = re.findall(kptregex, dataxml)
 
-        for kpt in kptdatas:
-            kindex = int(kpt[0])
-            kvec   = np.array([ kpt[1], kpt[2], kpt[3] ], dtype=float)
-            #kvec  *= 2*np.pi / alat
+        self.dispersions = []
+        for spin in range(1, nspin+1):
+            dispersion = Dispersion()
 
-            kdir = 'K{k:05d}'.format(k=kindex)
-            if not os.path.exists(kdir):
-                print "Error: directory {s} not found.".format(s=kdir)
-                return
+            for kpt in kptdatas:
+                kindex = int(kpt[0])
+                kvec   = np.array([ kpt[1], kpt[2], kpt[3] ], dtype=float)
+                #kvec  *= 2*np.pi / alat
 
-            # Read energy levels
-            os.chdir(kdir)
+                kdir = 'K{k:05d}'.format(k=kindex)
+                if not os.path.exists(kdir):
+                    print "Error: directory {s} not found.".format(s=kdir)
+                    return
 
-            eigenvalxml = open('eigenval.xml', 'r').read()
+                # Read energy levels
+                os.chdir(kdir)
 
-            eigregex  = '<EIGENVALUES.*?>(.*?)<'
-            eigstring = re.search(eigregex, eigenvalxml, re.DOTALL).group(1)
+                # get correct file name
+                if nspin == 1:
+                    eigf = 'eigenval.xml'
+                elif nspin == 2:
+                    eigf = 'eigenval{}.xml'.format(spin)
+                else:
+                    print "Error: Can only handle nspin=1, 2"
 
-            levelregex  = '\-?\d+.*'
-            levelregex  = floatregex
-            levels = np.array(re.findall(levelregex, eigstring), dtype = float)
-            levels *= atc.Ha / atc.eV
+                if not os.path.exists(eigf):
+                    print "Error: Cannot find file {}".format(eigf)
 
-            dispersion.addkpoint( 
-                    fu.EnergyLevels(energies=levels, fermi=fermi), 
-                    kvec)
+                eigenvalxml = open(eigf, 'r').read()
 
-            os.chdir('..')
+                eigregex  = '<EIGENVALUES.*?>(.*?)<'
+                eigstring = re.search(eigregex, eigenvalxml, re.DOTALL).group(1)
+
+                levelregex  = '\-?\d+.*'
+                levelregex  = floatregex
+                levels = np.array(re.findall(levelregex, eigstring), dtype = float)
+                levels *= atc.Ha / atc.eV
+
+                dispersion.addkpoint( 
+                        fu.EnergyLevels(energies=levels, fermi=fermi), 
+                        kvec)
+
+                os.chdir('..')
+
+            self.dispersions.append(dispersion)    
 
         os.chdir('..')
-
-        self.dispersions = [dispersion]
 
     def read_from_output(self, prefix):
         return 0;
