@@ -56,8 +56,8 @@ class Spectrum(object):
         fermi = np.unique(fermis)
 
         if len( np.unique(fermis) ) != 1:
-            print "There are Fermi energies {}".format(fermis)
-            print "Using the mean {}".format(np.mean(fermis))
+            print("There are Fermi energies {}".format(fermis))
+            print("Using the mean {}".format(np.mean(fermis)))
 
         return np.mean(fermis)
 
