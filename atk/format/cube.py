@@ -230,8 +230,8 @@ class Cube(object):
         dZ = np.linalg.norm(self.dz)
         nZ = self.shape[2]
 
-        for i in xrange(self.shape[0]):
-            for j in xrange(self.shape[1]):
+        for i in range(self.shape[0]):
+            for j in range(self.shape[1]):
                 # argmax returns index of first occurence of maximum value
                 plane[i,j] = np.argmax(self.data[i,j,::-1] > v)
                 # correcting for reversing the direction
@@ -250,12 +250,12 @@ class Cube(object):
 
         ## 1st try, just iterating through the numpy array.
         ## Turns out this is more than 40x slower than the version above.
-        #for i in xrange(self.shape[0]):
-        #    for j in xrange(self.shape[1]):
+        #for i in range(self.shape[0]):
+        #    for j in range(self.shape[1]):
 
         #        miss = True
         #        last = self.data[i,j, self.shape[2]-1]
-        #        for k in xrange(self.shape[2] -2, -1, -1):
+        #        for k in range(self.shape[2] -2, -1, -1):
         #            current = self.data[i,j,k]
         #            if current >= v and last <= v \
         #            or current <= v and last >= v:

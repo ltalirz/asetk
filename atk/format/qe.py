@@ -37,7 +37,7 @@ class Dispersion(object):
     def __iadd__(self, s):
         """Merging two spins"""
         if len(self.kpoints) != len(s.kpoints):
-            print "Unable to merge due to different number of kpoints"
+            print("Unable to merge due to different number of kpoints")
         for i in range(len(self.kpoints)):
             self.kpoints[i] += s.kpoints[i]
         return self
@@ -91,8 +91,8 @@ class Spectrum(object):
         fermi = np.unique(fermis)
 
         if len( np.unique(fermis) ) != 1:
-            print "There are Fermi energies {}".format(fermis)
-            print "Using the mean {}".format(np.mean(fermis))
+            print("There are Fermi energies {}".format(fermis))
+            print("Using the mean {}".format(np.mean(fermis)))
 
         return np.mean(fermis)
 
@@ -121,7 +121,7 @@ class Spectrum(object):
 
         savedir = prefix + '.save'
         if not os.path.exists(savedir):
-            print "Error: directory {s} not found.".format(s=savedir)
+            print("Error: directory {s} not found.".format(s=savedir))
             return
 
         os.chdir(savedir)
@@ -160,7 +160,7 @@ class Spectrum(object):
 
                 kdir = 'K{k:05d}'.format(k=kindex)
                 if not os.path.exists(kdir):
-                    print "Error: directory {s} not found.".format(s=kdir)
+                    print("Error: directory {s} not found.".format(s=kdir))
                     return
 
                 # Read energy levels
@@ -172,10 +172,10 @@ class Spectrum(object):
                 elif nspin == 2:
                     eigf = 'eigenval{}.xml'.format(spin)
                 else:
-                    print "Error: Can only handle nspin=1, 2"
+                    print("Error: Can only handle nspin=1, 2")
 
                 if not os.path.exists(eigf):
-                    print "Error: Cannot find file {}".format(eigf)
+                    print("Error: Cannot find file {}".format(eigf))
 
                 eigenvalxml = open(eigf, 'r').read()
 

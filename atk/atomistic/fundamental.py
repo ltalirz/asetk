@@ -37,12 +37,12 @@ class EnergyLevels(object):
 
         # If occupations are specified, take them
         if energies is not None and occupations is not None:
-            for i in xrange(len(energies)):
+            for i in range(len(energies)):
                 tmp = EnergyLevel(energies[i], occupations[i])
                 self.levels.append(tmp)
         # If we just have a fermi energy, create occupations
         elif energies is not None and fermi is not None:
-            for i in xrange(len(energies)):
+            for i in range(len(energies)):
                 if energies[i] < fermi:
                     tmp = EnergyLevel(energies[i], 1.0)
                 else:
@@ -51,7 +51,7 @@ class EnergyLevels(object):
                 self.levels.append(tmp)
         # If neither fermi nor occupations are set...
         elif energies is not None:
-            for i in xrange(len(energies)):
+            for i in range(len(energies)):
                 tmp = EnergyLevel(energies[i], None)
                 self.levels.append(tmp)
 
@@ -79,7 +79,7 @@ class EnergyLevels(object):
                   .format(lo=len(es), le=len(self.levels)))
             return
 
-        for i in xrange(len(self.levels)):
+        for i in range(len(self.levels)):
             self.levels[i].energy = es[i]
 
     @occupations.setter
@@ -90,7 +90,7 @@ class EnergyLevels(object):
             print('Error: Trying to set {lo} occupations for {le} levels.' \
                   .format(lo=len(os), le=len(self.levels)))
         else:
-            for i in xrange(len(self.levels)):
+            for i in range(len(self.levels)):
                 self.levels[i].occupation = os[i]
 
     def copy(self, energylevels):
@@ -150,7 +150,7 @@ class EnergyLevels(object):
         """
 
         if sigma/deltaE < 10:
-            print "Warning: sigma/deltaE < 10. Gaussians might not be sampled well."
+            print("Warning: sigma/deltaE < 10. Gaussians might not be sampled well.")
         gaussian = lambda x: 1/(np.sqrt(2*np.pi)*sigma) \
                              * np.exp(-x**2/(2*sigma**2))
 

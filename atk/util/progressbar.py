@@ -1,4 +1,3 @@
-from __future__ import division
 import time
 import sys
 
@@ -27,7 +26,7 @@ class ProgressBar:
         toadd = self.iter / self.niter * self.ndash - self.dash
         toadd = int(toadd)
         if toadd > 0:
-            for i in xrange(toadd):
+            for i in range(toadd):
                 sys.stdout.write("-")
                 sys.stdout.flush()
                 self.dash = self.dash + 1
