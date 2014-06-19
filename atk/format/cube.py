@@ -194,14 +194,21 @@ class Cube(object):
 
         f.close()
 
-    def get_plane_above_atoms(self, d):
+    def get_plane_above_atoms(self, d, verbose=False):
         """Returns plane given by z=d above topmost atom
         
         d should be given in Angstroms.
         """
         zmax = np.max(self.atoms.positions[:,2])
         zplane = zmax + d
-        iplane = int(zplane / np.linalg.norm(self.dz))
+        dz = np.linalg.norm(self.dz)
+
+        iplane = int (zplane / dz)
+        zplanereal = iplane * dz
+
+        if verbose:
+            print("Precise height above atoms: {} Angstroms" \
+                   .format(zplanereal - zmax))
 
         return self.data[:,:,iplane]
 
