@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
-from atk.format.cube import Cube
+from asetk.format.cube import Cube
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt

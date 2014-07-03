@@ -5,7 +5,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-from atk.format.cube import Cube
+from asetk.format.cube import Cube
 import sys
 
 def resample(plane, cube, rep=None, nsamples=1000):

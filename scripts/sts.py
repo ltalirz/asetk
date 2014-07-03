@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
-import atk.format.cp2k as cp2k
-import atk.util.progressbar as progressbar
+import asetk.format.cp2k as cp2k
+import asetk.util.progressbar as progressbar
 import os.path
 
 # Define command line parser

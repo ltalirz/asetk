@@ -7,8 +7,8 @@ import re
 import copy  as cp
 import numpy as np
 import StringIO
-import atk.atomistic.fundamental as fu
-import atk.atomistic.constants as atc
+import asetk.atomistic.fundamental as fu
+import asetk.atomistic.constants as atc
 import cube
 
 class Spectrum(object):

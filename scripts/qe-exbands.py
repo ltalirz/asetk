@@ -2,7 +2,7 @@
 # Reads energy levels from qe output and plots (1d) band structure
 # to file "bands.png"
 
-import atk.format.qe as qe
+import asetk.format.qe as qe
 from sys import argv
 import numpy as np
 import matplotlib as mpl

@@ -2,7 +2,7 @@
 # Usage: ./yambo-plot-bands.py yambo.out QP 
 
 import argparse
-import atk.format.yambo as yambo
+import asetk.format.yambo as yambo
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')

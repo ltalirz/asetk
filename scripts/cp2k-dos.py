@@ -2,7 +2,7 @@
 # Produce density of states from CP2K MoLog file
 # Usage: cp2k-dos.py cp2k.out
 import argparse
-import atk.format.cp2k as cp2k
+import asetk.format.cp2k as cp2k
 import numpy as np
 import os
 

@@ -8,8 +8,8 @@ import os
 import copy  as cp
 import numpy as np
 
-import atk.atomistic.fundamental as fu
-import atk.atomistic.constants as atc
+import asetk.atomistic.fundamental as fu
+import asetk.atomistic.constants as atc
 
 class Dispersion(object):
     """Holds k-points belonging to one spin"""

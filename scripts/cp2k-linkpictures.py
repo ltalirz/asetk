@@ -6,7 +6,7 @@ import argparse
 import glob
 import os
 
-import atk.format.cp2k as cp2k
+import asetk.format.cp2k as cp2k
 
 
 # Define command line parser

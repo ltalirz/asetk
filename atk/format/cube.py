@@ -5,8 +5,8 @@ Provides a Cube class with reading and writing functions
 
 import numpy as np
 import copy  as cp
-import atk.atomistic.fundamental as fu
-import atk.atomistic.constants as constants
+import asetk.atomistic.fundamental as fu
+import asetk.atomistic.constants as constants
 
 
 class Cube(object):
