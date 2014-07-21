@@ -6,10 +6,9 @@ Representation of a spectrum
 import re
 import copy  as cp
 import numpy as np
-import StringIO
 import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as atc
-import cube
+from . import cube
 
 class Dispersion:
     """A Dispersion holds the k-points belonging to one spin"""
@@ -31,7 +30,7 @@ class Dispersion:
         """Returns list of level occupations of all k-points."""
         os = []
         for el in self.energylevels:
-            os = os + el.occupations
+            os = os + list(el.occupations)
         return os
 
     def copy(self, dispersion):
@@ -73,6 +72,12 @@ class Spectrum(object):
         tmp.read_from_output(fname, mode)
         return tmp
 
+    @classmethod
+    def from_qp(cls, fname=None, mode=None):
+        """Creates Spectrum from Yambo o.qp file"""
+        tmp = Spectrum()
+        tmp.read_from_qp(fname, mode)
+        return tmp
 
     @property
     def energies(self):
@@ -173,4 +178,29 @@ class Spectrum(object):
             self.spins.append(spin)
 
         
+    def read_from_qp(self, fname="o.qp", ihomo=None):
+        """Read from o.qp output (has more digits than in report.
 
+           Anyhow, the proper way would be to read the database"""
+        s = open(fname, 'r').read()
+
+        data = np.genfromtxt(fname, dtype=float)
+
+        energies = data[:,2] + data[:,3]
+
+        # setting HOMO to zero
+        if ihomo:
+            energies -= energies[ihomo]
+
+             
+        self.spins=[]
+        self.dispersions=[]
+
+        # No spin for the moment, but shouldn't be too difficult to extend
+        for spin in [0]:
+            levels = fu.EnergyLevels(energies=energies,occupations=None)
+            disp = Dispersion(energylevels=[levels], kvectors = [ (0,0,0) ] )
+
+
+        self.dispersions.append(disp)
+        self.spins.append(spin)
