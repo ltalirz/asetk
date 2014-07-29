@@ -6,10 +6,10 @@ Representation of a spectrum
 import re
 import copy  as cp
 import numpy as np
-import StringIO
+import io
 import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as atc
-import cube
+from . import cube
 
 class Spectrum(object):
 
@@ -56,8 +56,8 @@ class Spectrum(object):
         fermi = np.unique(fermis)
 
         if len( np.unique(fermis) ) != 1:
-            print("There are Fermi energies {}".format(fermis))
-            print("Using the mean {}".format(np.mean(fermis)))
+            print(("There are Fermi energies {}".format(fermis)))
+            print(("Using the mean {}".format(np.mean(fermis))))
 
         return np.mean(fermis)
 
@@ -98,9 +98,9 @@ class Spectrum(object):
         for match in matches:
             # we take only the last ones, which do not contain 'SCF'
             if not re.search('SCF', match[0]):
-                data = np.genfromtxt(StringIO.StringIO(match[1]),
+                data = np.genfromtxt(io.BytesIO(match[1].encode()),
                              dtype=[int,float,float])
-                i,E,occ = zip(*data)
+                i,E,occ = list(zip(*data))
                 fermi = float(match[2]) * atc.Ha / atc.eV
                 E     = np.array(E)     * atc.Ha / atc.eV
 
