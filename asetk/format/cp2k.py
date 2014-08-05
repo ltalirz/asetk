@@ -53,8 +53,6 @@ class Spectrum(object):
         """Returns Fermi energy."""
         fermis = [el.fermi for el in self.energylevels]
 
-        fermi = np.unique(fermis)
-
         if len( np.unique(fermis) ) != 1:
             print("There are Fermi energies {}".format(fermis))
             print("Using the mean {}".format(np.mean(fermis)))
@@ -66,9 +64,73 @@ class Spectrum(object):
         self.energylevels = [ el.copy() for el in spectrum.energylevels ]
         self.spins = cp.copy(spectrum.spins)
 
+    def n_occupied(self):
+        """Return number of occupied levels"""
+        noccs = [el.n_occupied() for el in self.energylevels]
+        if len( np.unique(noccs) ) != 1:
+            print("The number of occupied orbitals {} varies between spins"\
+                    .format(noccs))
+            print("Using the mean {}".format(np.mean(noccs)))
+
+        return int(np.mean(noccs))
+
+    def n_empty(self):
+        """Return number of empty levels"""
+        nempts = [el.n_empty() for el in self.energylevels]
+        if len( np.unique(nempts) ) != 1:
+            print("The number of empty orbitals {} varies between spins"\
+                    .format(nempts))
+            print("Using the mean {}".format(np.mean(nempts)))
+
+        return int(np.mean(nempts))
+
     def shift(self, de):
         for levels in self.energylevels:
             levels.shift(de)
+
+    def __iadd__(self, de):
+        for levels in self.energylevels:
+            levels.shift(de)
+        return self
+
+    def __isub__(self, de):
+        for levels in self.energylevels:
+            levels.shift(-de)
+        return self
+
+    def dos(self, sigma = 0.05, deltaE = 0.005, nsigma = 10):
+        """
+        Returns [energy, density of states].
+        
+        Parameters
+        ----------
+        sigma :  Width of Gaussian broadening [eV]
+        deltaE :  spacing of energy grid [eV]
+        nsigma : Gaussian distribution is cut off after nsigma*sigma
+        """
+
+        nspin = len(self.energylevels)
+        if nspin > 1:
+            print("Summing contributions from {} spins"\
+                     .format(len(self.energylevels)))
+
+            fermis = [el.fermi for el in self.energylevels]
+            if len( np.unique(fermis) ) != 1:
+                print("Warning: Fermi energies {} differ".format(fermis))
+
+            DOSes = []
+            for el in self.energylevels:
+                E, DOS = el.dos(sigma, deltaE, nsigma)
+                DOSes.append(DOS)
+
+            return [E, np.sum(DOSes, axis=0)]
+
+        elif nspin == 1:
+            return self.energylevels[0].dos(sigma, deltaE, nsigma)
+
+        else:
+            print("Error: DOS requested, but no states found.")
+            return 
 
     def __str__(self):
         text  = "Spectrum containing {} spins\n".format(len(self.energylevels))

@@ -112,19 +112,29 @@ class EnergyLevels(object):
         self.energies += de
         self.fermi  += de
 
+    def __iadd__(self, de):
+        self.energies += de
+        self.fermi  += de
+        return self
+
+    def __isub__(self, de):
+        self.energies -= de
+        self.fermi  -= de
+        return self
+
     def n_occupied(self):
         """Return number of occupied levels"""
 
-        if fermi:
-            return sum([1 if e < fermi else 0 for e in energies])
+        if self.fermi:
+            return sum([1 if e < self.fermi else 0 for e in self.energies])
         elif all(o is not None for o in self.occupations):
             print("Note: Counting occupied levels based on occupation number.")
-            return sum([1 if o > 0 else 0 for o in occupations])
+            return sum([1 if o > 0 else 0 for o in self.occupations])
         else:
             print("Error: Cannot determine occupations.")
 
-    def n_unoccopied(self):
-        """Return number of unoccupied levels"""
+    def n_empty(self):
+        """Return number of empty levels"""
         return len(levels) - self.n_occupied()
 
     def __str__(self):

@@ -66,16 +66,22 @@ class Xyz(object):
         else:
             return images[index]
 
-    def write(self, fileobj, images, comment=''):
-      if isinstance(fileobj, str):
-          fileobj = paropen(fileobj, 'w')
+    def string(self):
+        """Construct and return string for .xyz file"""
+        s  = ''
+        s += '  {n}\n'.format(n=len(self.atoms))
+        s += self.comment + '\n'
+        for atom in self.atoms:
+            s += '{s:4} {x:<16.10} {y:<16.10} {z:<16.10}\n' \
+                 .format(s=atom.s, x=atom.x, y=atom.y, z=atom.z)
 
-      if not isinstance(images, (list, tuple)):
-          images = [images]
+        return s
 
-      symbols = images[0].get_chemical_symbols()
-      natoms = len(symbols)
-      for atoms in images:
-          fileobj.write('%d\n%s\n' % (natoms, comment))
-          for s, (x, y, z) in zip(symbols, atoms.get_positions()):
-              fileobj.write('%-2s %22.15f %22.15f %22.15f\n' % (s, x, y, z))
+    def write(fname=None):
+        """Write content of object to .xyz file"""
+        if fname is not None:
+            self.fname = fname
+        f=open(self.outname, 'w')
+        f.write(self.string())
+        f.close()
+
