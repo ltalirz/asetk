@@ -106,27 +106,20 @@ args = parser.parse_args()
 
 # Prepare broadening functions for later convolution
 # quantile function quantile(y) = x is defined such that
-# the integral of the probability density from -\infty to x has weight y.
+# the integral of the probability density from -\infty to x equals y.
 if args.bmethod == 'Gaussian':
     sigma = args.FWHM / np.log(8 * np.sqrt(2))
-    # quantile function x = quantile(y) is defined such that
-    # the integral from -\infty to x has weight y.
-    quantile = lambda y: np.sqrt(2) * scsp.erfinv(2*y -1)
-    # f_gamma(x) = 1/sigma * f_1(x/sigma) 
-    # Q_sigma(y) = sigma Q_1(y)
-    eb = - quantile(args.bepsilon * 0.5) * sigma
+    quantile = lambda y: np.sqrt(2) * scsp.erfinv(2.0*y -1.0) * sigma
     broadening = lambda x: 1/(sigma * np.sqrt(2*np.pi)) \
                          * np.exp( - x**2 / (2 * sigma**2) )
 elif args.bmethod == 'Lorentzian':
     gamma = args.FWHM * 0.5
-    quantile = lambda x: np.tan(np.pi * (x - 0.5))
-    # f_gamma(x) = gamma**2 * f_1(gamma x) 
-    # Q_gamma(y) = gamma Q_1(y / gamma)
-    eb = - quantile(args.bepsilon * 0.5 / gamma) * gamma
+    quantile = lambda y: np.tan(np.pi * (y - 0.5)) * gamma
     broadening = lambda x: 1/np.pi * gamma / (x**2 + gamma**2)
 else:
     print("Error: No broadening method recognized.")
 
+eb = -quantile(args.bepsilon * 0.5)
 print("Using window [x{:.3f}eV, x+{:.3f}eV] for level broadening."\
       .format(-eb, eb))
 print("This window contains {:.5f} % of the total weight of {}.\n"\
