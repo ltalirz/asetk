@@ -122,11 +122,16 @@ class EnergyLevels(object):
         self.fermi  -= de
         return self
 
-    def n_occupied(self):
-        """Return number of occupied levels"""
+    def n_occupied(self, epsilon=1e-12):
+        """Return number of occupied levels
+        
+        Levels with energy at most epsilon above Fermi  still count as occupied.
+        This prevents the disregard of occupied levels, when the Fermi energy 
+        is identical to the highest occupied level.
+        """
 
         if self.fermi:
-            return sum([1 if e < self.fermi else 0 for e in self.energies])
+            return sum([1 if e < self.fermi + epsilon else 0 for e in self.energies])
         elif all(o is not None for o in self.occupations):
             print("Note: Counting occupied levels based on occupation number.")
             return sum([1 if o > 0 else 0 for o in self.occupations])

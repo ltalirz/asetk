@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
+import scipy.special as scsp
 import argparse
 import asetk.format.cp2k as cp2k
 import asetk.util.progressbar as progressbar
@@ -58,17 +59,28 @@ parser.add_argument(
     help='By default, Fermi is taken as zero-energy reference. With this option\
           it is possible to define a different reference')
 parser.add_argument(
-    '--sigma',
+    '--FWHM',
     metavar='ENERGY',
-    default=+0.075,
+    default=+0.100,
     type=float,
-    help='sigma of Gaussian broadening [eV]. FWHM = 2.355 sigma.')
+    help='Full-width half-maximum of broadening.\n\
+          FWHM = 2.355 \sigma in Gaussian broadening. \
+          FWHM = \Gamma in Lorentzian broadening.')
 parser.add_argument(
-    '--nsigmacut',
-    metavar='INT',
-    default=5,
-    type=int,
-    help='At a given energy E, consider levels within window [E-nsigmacut*sigma,E+nsigmacut*sigma].')
+    '--bmethod',
+    metavar='KEYWORD',
+    default='Gaussian',
+    help='The broadening method applied.\n\
+          Can be \'Gaussian\' or \'Lorentzian\'.')
+parser.add_argument(
+    '--bepsilon',
+    metavar='FLOAT',
+    default=1e-5,
+    type=float,
+    help='Convolution is performed with broadening function in range \n\
+          [E-Eb, E+Eb] where Eb is determined such that the integrated \n\
+          weight of the broadening function outside of [-Eb, Eb] is \n\
+          below bepsilon.')
 parser.add_argument(
     '--height',
     metavar='DISTANCE',
@@ -92,8 +104,33 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-gaussian = lambda x: 1/(args.sigma * np.sqrt(2*np.pi)) \
-                     * np.exp( - x**2 / (2 * args.sigma**2) )
+# Prepare broadening functions for later convolution
+# quantile function quantile(y) = x is defined such that
+# the integral of the probability density from -\infty to x has weight y.
+if args.bmethod == 'Gaussian':
+    sigma = args.FWHM / np.log(8 * np.sqrt(2))
+    # quantile function x = quantile(y) is defined such that
+    # the integral from -\infty to x has weight y.
+    quantile = lambda y: np.sqrt(2) * scsp.erfinv(2*y -1)
+    # f_gamma(x) = 1/sigma * f_1(x/sigma) 
+    # Q_sigma(y) = sigma Q_1(y)
+    eb = - quantile(args.bepsilon * 0.5) * sigma
+    broadening = lambda x: 1/(sigma * np.sqrt(2*np.pi)) \
+                         * np.exp( - x**2 / (2 * sigma**2) )
+elif args.bmethod == 'Lorentzian':
+    gamma = args.FWHM * 0.5
+    quantile = lambda x: np.tan(np.pi * (x - 0.5))
+    # f_gamma(x) = gamma**2 * f_1(gamma x) 
+    # Q_gamma(y) = gamma Q_1(y / gamma)
+    eb = - quantile(args.bepsilon * 0.5 / gamma) * gamma
+    broadening = lambda x: 1/np.pi * gamma / (x**2 + gamma**2)
+else:
+    print("Error: No broadening method recognized.")
+
+print("Using window [x{:.3f}eV, x+{:.3f}eV] for level broadening."\
+      .format(-eb, eb))
+print("This window contains {:.5f} % of the total weight of {}.\n"\
+      .format((1-args.bepsilon)*100, args.bmethod))
 
 lfname, lfext = os.path.splitext(args.levelsfile)
 if lfext == '.MOLog':
@@ -130,8 +167,8 @@ for spin, levels in zip(spectrum.spins, spectrum.energylevels):
         e = l.energy
         o = l.occupation
         # If we need the cube file for this level..
-        if e >= args.emin - args.sigma * args.nsigmacut and \
-           e <= args.emax + args.sigma * args.nsigmacut:
+        if e >= args.emin - eb and \
+           e <= args.emax + eb:
 
                found = False
                for cube in cubes:
@@ -154,8 +191,8 @@ print("\nInitializing STS cube")
 stscube = cp2k.WfnCube.from_file(required_cubes[0].filename, read_data=True)
 
 stscube.title = "STS data (z axis = energy)\n"
-stscube.comment = "Range [{:4.2f} V, {:4.2f} V], de {:4.3f} V, sigma {:4.3f} V\n" \
-               .format(args.emin, args.emax, args.de, args.sigma)
+stscube.comment = "Range [{:4.2f} V, {:4.2f} V], de {:4.3f} V, FWHM {:4.3f} V {}\n" \
+               .format(args.emin, args.emax, args.de, args.FWHM, args.bmethod)
 # adjust z-dimension for energy
 shape = np.array(stscube.data.shape)
 shape[2] = int( (args.emax - args.emin) / args.de) + 1
@@ -202,13 +239,13 @@ for cube in required_cubes:
         wfile.write('{:6d} {:5d} {:10.3f} {:14.4e}\n'.\
                     format(cube.wfn, cube.spin, cube.energy, weight))
 
-    emin = tmp.energy - args.sigma * args.nsigmacut
-    emax = tmp.energy + args.sigma * args.nsigmacut
+    emin = tmp.energy - eb
+    emax = tmp.energy + eb
     imin = (np.abs(zrange-emin)).argmin()
     imax = (np.abs(zrange-emax)).argmin()
 
     for i in range(imin,imax+1):
-        stscube.data[:,:,i] += plane * gaussian(tmp.energy - zrange[i])
+        stscube.data[:,:,i] += plane * broadening(tmp.energy - zrange[i])
 
     bar.iterate()
 print("\n")
