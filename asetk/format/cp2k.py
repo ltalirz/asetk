@@ -148,22 +148,40 @@ class Spectrum(object):
         s = open(fname, 'r').read()
 
         lineregex='[^\r\n]*\r?\n'
-        fermiregex='.*?Fermi energy:(\s*[\-\d\.]+)'
+        fermiregex='Fermi energy:(\s*[\-\d\.]+)'
+        # do not read sections with eigenvectors
         matches=re.findall(
-                'EIGENVALUES({l}){l}{l}([\-\.\s\d]*){f}' \
+                '(ALPHA|BETA)? ?MO EIGENVALUES AND MO OCCUPATION NUMBERS(?!, AND)({l}){l}{l}([\-\.\s\d]*).*?{f}' \
                     .format(l=lineregex, f=fermiregex), 
                 s, re.DOTALL)
+
+        # first, we sort out all but the last one
+        last_matches = []
+        for match in reversed(matches):
+            # we take only the ones, which do not contain 'SCF'
+            if re.search('SCF', match[0]):
+                continue
+            elif match[0] == '':
+                last_matches.append(match)
+                break
+            elif match[0] == 'ALPHA' or match[0] == 'BETA' \
+                 and len(last_matches) < 2:
+                last_matches.append(match)
+                continue
+            else:
+                break
+
 
         self.spins=[]
         self.energylevels=[]
         spin=0
-        for match in matches:
+        for match in last_matches:
             # we take only the last ones, which do not contain 'SCF'
             if not re.search('SCF', match[0]):
-                data = np.genfromtxt(StringIO.StringIO(match[1]),
+                data = np.genfromtxt(StringIO.StringIO(match[2]),
                              dtype=[int,float,float])
                 i,E,occ = zip(*data)
-                fermi = float(match[2]) * atc.Ha / atc.eV
+                fermi = float(match[3]) * atc.Ha / atc.eV
                 E     = np.array(E)     * atc.Ha / atc.eV
 
                 levels = fu.EnergyLevels(energies=E,occupations=occ, fermi=fermi)
