@@ -79,6 +79,13 @@ class Spectrum(object):
         tmp.read_from_qp(fname, mode)
         return tmp
 
+    @classmethod
+    def from_netcdf_db(cls, fname=None, mode=None):
+        """Creates Spectrum from Yambo netcdf database"""
+        tmp = Spectrum()
+        tmp.read_from_netcdf_db(fname, mode=mode)
+        return tmp
+
     @property
     def energies(self):
         """Returns list of energy levels of all spins."""
@@ -204,3 +211,48 @@ class Spectrum(object):
 
         self.dispersions.append(disp)
         self.spins.append(spin)
+
+    def read_from_netcdf_db(self, fname="ndb.QP", mode="QP"):
+        """Read from netCDF database
+        
+        requires netCDF4 python module"""
+
+        from netCDF4 import Dataset
+        f = Dataset(fname, 'r')
+
+        QP_kpts =  f.variables['QP_kpts'][:]
+        QP_table = f.variables['QP_table'][:]
+        QP_E_Eo_Z =  f.variables['QP_E_Eo_Z'][:]
+
+        nk = QP_kpts.shape[1]
+        nbnd = QP_table.shape[1] / nk
+        nspin = QP_E_Eo_Z.shape[0]
+        if mode == "QP":
+            iener = 0
+        elif mode == "Eo":
+            iener = 1
+
+        self.spins=[]
+        self.dispersions=[]
+
+        for ispin in range(nspin):
+
+            energylevels = []
+            kvectors = []
+            for ik in range(nk):
+                k = QP_kpts[:, ik]
+                e = QP_E_Eo_Z[0, ik*nbnd : (ik+1)*nbnd, iener] * atc.Ha / atc.eV
+                levels = fu.EnergyLevels(energies=e,occupations=None)
+
+                energylevels.append(levels)
+                kvectors.append(k)
+
+            disp = Dispersion(energylevels=energylevels, kvectors = kvectors)
+
+            self.dispersions.append(disp)
+            self.spins.append(ispin)
+
+        ## setting HOMO to zero
+        #if ihomo:
+        #    energies -= energies[ihomo]
+

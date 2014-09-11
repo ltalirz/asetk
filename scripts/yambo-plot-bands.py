@@ -7,29 +7,55 @@ import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+import os
 
 
 # Define command line parser
 parser = argparse.ArgumentParser(
     description='Reads energy levels from Yambo output\
                  and plots (1d) band structure to bands.png.')
-parser.add_argument('--version', action='version', version='%(prog)s 27.01.2014')
+parser.add_argument('--version', action='version', version='%(prog)s 12.09.2014')
 parser.add_argument(
-    'out',
+    'source',
     metavar='FILENAME', 
-    help='Yambo output containing energy levels')
+    help='Source file containing energy levels from Yambo')
 parser.add_argument(
-    'mode',
+    '--format',
+    metavar='STRING', 
+    default=None,
+    help='May be "netcdf_db" or "output" or "qp" (optional)')
+parser.add_argument(
+    '--mode',
+    default='QP',
     metavar='STRING', 
     help='May be "DFT" or "QP" (optional)')
 
 args = parser.parse_args()
-filename = args.out
+filename = args.source
 
 window = 10 # window around fermi in eV
 
 print "Reading data from {f}".format(f=filename)
-spectrum   = yambo.Spectrum.from_output(filename, mode=args.mode)
+
+# we try to guess the format
+if not args.format:
+    ext = os.path.splitext(args.source)[-1]
+
+    if args.source == "o.qp":
+        args.format = 'qp'
+    elif ext == '.QP':
+        args.format = 'netcdf_db'
+    elif ext == '.out':
+        args.format = 'output'
+    else:
+        print("Error: Please specify source forat using --format")
+ 
+if args.format == 'output' or args.format == 'qp':
+    spectrum   = yambo.Spectrum.from_output(filename, mode=args.mode)
+elif args.format == 'netcdf_db':
+    spectrum   = yambo.Spectrum.from_netcdf_db(filename, mode=args.mode)
+else:
+    print("Error: Unrecognized format specification {}".format(args.format))
 
 print spectrum
 
@@ -39,7 +65,7 @@ for spin, dispersion in zip(spectrum.spins, spectrum.dispersions):
         E = dispersion.energylevels[i].energies
         fermi = dispersion.energylevels[i].fermi
 
-        k = np.array([ dispersion.kvectors[i][2] for l_ in range(len(E))])
+        k = np.array([ dispersion.kvectors[i][0] for l_ in range(len(E))])
         # QE likes to place kpoints at -0.5 instead of +0.5
         k = [ kp if kp >= 0 else kp+1 for kp in k]
 
