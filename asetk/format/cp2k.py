@@ -98,15 +98,12 @@ class Spectrum(object):
             levels.shift(-de)
         return self
 
-    def dos(self, sigma = 0.05, deltaE = 0.005, nsigma = 10):
+    def dos(self, bmethod = 'Gaussian', bepsilon = 1e-3, FWHM = 0.1, delta_e = 0.005):
         """
         Returns [energy, density of states].
         
-        Parameters
-        ----------
-        sigma :  Width of Gaussian broadening [eV]
-        deltaE :  spacing of energy grid [eV]
-        nsigma : Gaussian distribution is cut off after nsigma*sigma
+        For documentation of parameters, see 
+          atk.atomistic.fundamental.EnergyLevels.dos
         """
 
         nspin = len(self.energylevels)
@@ -120,13 +117,13 @@ class Spectrum(object):
 
             DOSes = []
             for el in self.energylevels:
-                E, DOS = el.dos(sigma, deltaE, nsigma)
+                E, DOS = el.dos(bmethod, bepsilon, FWHM, delta_e)
                 DOSes.append(DOS)
 
             return [E, np.sum(DOSes, axis=0)]
 
         elif nspin == 1:
-            return self.energylevels[0].dos(sigma, deltaE, nsigma)
+            return self.energylevels[0].dos(bmethod, bepsilon, FWHM, delta_e)
 
         else:
             print("Error: DOS requested, but no states found.")
