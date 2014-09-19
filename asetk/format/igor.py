@@ -1,4 +1,4 @@
-"""Classes for use with IGOR
+"""Classes for use with IGOR Pro
 
 """
 
@@ -11,7 +11,7 @@ import numpy as np
 import cube
 
 class Axis(object):
-    """Represents an axis of an Igor wave"""
+    """Represents an axis of an IGOR wave"""
 
     def __init__(self, symbol, min, max, label, name):
         self.symbol = symbol
@@ -22,7 +22,7 @@ class Axis(object):
 
 
 class Wave(object):
-    """A class template for Igor waves of any dimension"""
+    """A class template for IGOR waves of generic dimension"""
 
     def __init__(self, data=None, name=None, axes=None):
         """Initialize IGOR wave of generic dimension"""
@@ -39,7 +39,6 @@ class Wave(object):
         for i in range(len(self.data.shape)):
             dimstring += "{}, ".format(self.data.shape[i])
         dimstring = dimstring[:-2] + ")" 
-
 
         s += "WAVES/N={}  {}\n".format(dimstring, self.name)
         s += "BEGIN\n"
@@ -86,35 +85,10 @@ class Wave3d(Wave):
         return tmp
 
 
-    @property
-    def fermi(self):
-        """Returns Fermi energy."""
-        fermis = [el.fermi for el in self.energylevels]
-
-        if len( np.unique(fermis) ) != 1:
-            print("There are Fermi energies {}".format(fermis))
-            print("Using the mean {}".format(np.mean(fermis)))
-
-        return np.mean(fermis)
-
     def copy(self, spectrum):
         """Performs deep copy of spectrum."""
         self.energylevels = [ el.copy() for el in spectrum.energylevels ]
         self.spins = cp.copy(spectrum.spins)
-
-    def __iadd__(self, de):
-        for levels in self.energylevels:
-            levels.shift(de)
-        return self
-
-    def __isub__(self, de):
-        for levels in self.energylevels:
-            levels.shift(-de)
-        return self
-
-
-    def __getitem__(self, index):
-        return self.levels[index]
 
     def read_from_cube(self, fname):
         """Reads 3d Igor Wave from Gaussian Cube file"""
