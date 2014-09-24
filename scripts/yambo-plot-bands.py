@@ -35,7 +35,7 @@ filename = args.source
 
 window = 10 # window around fermi in eV
 
-print "Reading data from {f}".format(f=filename)
+print("Reading data from {f}".format(f=filename))
 
 # we try to guess the format
 if not args.format:
@@ -57,7 +57,7 @@ elif args.format == 'netcdf_db':
 else:
     print("Error: Unrecognized format specification {}".format(args.format))
 
-print spectrum
+print(spectrum)
 
 data = None
 for spin, dispersion in zip(spectrum.spins, spectrum.dispersions):
@@ -81,14 +81,14 @@ for spin, dispersion in zip(spectrum.spins, spectrum.dispersions):
         plt.ylabel('E [eV]')
 
         if data is not None:
-            data = np.concatenate( (data, np.array(zip(k,E))), axis=0 )
+            data = np.concatenate( (data, np.array(list(zip(k,E)))), axis=0 )
         else:
-            data = np.array(zip(k,E))
+            data = np.array(list(zip(k,E)))
 
 np.savetxt('bands.dat', data)
 
 #plt.show()
 
 pngname='bands.png'
-print "Saving band structure plot to {f}".format(f=pngname)
+print("Saving band structure plot to {f}".format(f=pngname))
 plt.savefig(pngname, transparent=True, dpi=150)
