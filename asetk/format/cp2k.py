@@ -199,9 +199,12 @@ class Spectrum(object):
             print("Error: Unable to parse CP2K output file")
             return
 
+
         # We are interested only in the last run (result of calculation)
         rundatas = re.findall(
-                'Eigenvalues of the occupied subspace .*?HOMO', s, re.DOTALL)
+                'Eigenvalues of the occupied subspace .*?FORCE_EVAL', s, re.DOTALL)
+        #rundatas = re.findall(
+        #        'Eigenvalues of the occupied subspace .*?HOMO', s, re.DOTALL)
         rundata = rundatas[-1]
 
         # each spin may have occupied & unoccupied levels + fermi energy
