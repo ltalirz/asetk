@@ -29,11 +29,17 @@ parser.add_argument(
     default='QP',
     metavar='STRING', 
     help='May be "DFT" or "QP" (optional)')
+parser.add_argument(
+    '--window',
+    default=5,
+    metavar='FLOAT', 
+    type=float,
+    help='Will plot [Ef-window, Ef+window]')
 
 args = parser.parse_args()
 filename = args.source
 
-window = 10 # window around fermi in eV
+window = args.window * 2
 
 print "Reading data from {f}".format(f=filename)
 

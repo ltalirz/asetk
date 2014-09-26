@@ -27,6 +27,7 @@ parser.add_argument(
     '--window',
     metavar='ENERGY',
     default=3,
+    type=float,
     help='Plot range [-window,window] around Fermi.')
 parser.add_argument(
     '--save_bands',
@@ -84,18 +85,18 @@ for i in range(len(dispersion.kpoints)):
     else:
         data = datablock
 
-np.savetxt('bands.dat', data, header='#kx  ky  kz  E[eV]', fmt='%.4e %.4e %.4e %.6e')
+np.savetxt(prefix+'_bands.dat', data, header='#kx  ky  kz  E[eV]', fmt='%.4e %.4e %.4e %.6e')
     
 # alternative: grouping by band
 if args.save_bands:
     bands = np.array([kpt.energies for kpt in dispersion.kpoints])
     for i in range(len(bands.T)):
         line = bands.T[i]
-        fname = "b{:03d}.dat".format(i+1)
+        fname = "{}_b{:03d}.dat".format(prefix, i+1)
         np.savetxt(fname,  zip(klist, line), header="k   E [eV]")
 
 #plt.show()
 
 
-plt.savefig('bands.png', transparent=True, dpi=150)
+plt.savefig(prefix+'_bands.png', transparent=True, dpi=150)
 

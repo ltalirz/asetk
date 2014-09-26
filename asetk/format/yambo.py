@@ -1,6 +1,8 @@
 """Classes for use with Yambo
 
-Representation of a spectrum
+Representation of a spectrum.
+Main functionality is to read from Yambo output, o.qp files
+and also netcdf databases.
 """
 
 import re
@@ -15,47 +17,62 @@ class Dispersion:
 
     def __init__(self, energylevels=None, kvectors=None, weights=None):
         """Set up spectrum from a list of EnergyLevels."""
-        self.energylevels = energylevels
-        self.kvectors = kvectors
-        self.weights = weights
+        self.__energylevels = energylevels
+        self.__kvectors = kvectors
+        self.__weights = weights
+
+    @property
+    def energylevels(self):
+        """Returns energylevelsi of all k-points."""
+        return self.__energylevels
+
+    @property
+    def kvectors(self):
+        return self.__kvectors
+
+    @property
+    def weights(self):
+        return self.__weights
 
     @property
     def energies(self):
         """Returns list of energy levels of all k-points."""
-        list = [el.energies for el in self.energylevels]
+        list = [el.energies for el in self.__energylevels]
         return np.concatenate(list)
 
     @property
     def occupations(self):
         """Returns list of level occupations of all k-points."""
         os = []
-        for el in self.energylevels:
+        for el in self.__energylevels:
             os = os + list(el.occupations)
         return os
 
     def copy(self, dispersion):
         """Performs deep copy of dispersion."""
-        self.energylevels = [ el.copy() for el in dispersion.energylevels ]
-        self.kvectors = cp.copy(spectrum.kvectors)
+        self.__energylevels = [ el.copy() for el in dispersion.__energylevels ]
+        self.__kvectors = cp.copy(spectrum.__kvectors)
+        self.__weights = cp.copy(spectrum.__weights)
 
     def shift(self, de):
-        for levels in self.energylevels:
+        for levels in self.__energylevels:
             levels.shift(de)
 
     def __str__(self):
-        text  = "Dispersion containing {} k-points\n".format(len(self.energylevels))
-        for i in range(len(self.energylevels)):
-            e = self.energylevels[i]
-            k = self.kvectors[i]
+        text  = "Dispersion containing {} k-points\n".format(len(self.__energylevels))
+        for i in range(len(self.__energylevels)):
+            e = self.__energylevels[i]
+            k = self.__kvectors[i]
             text += 'k = ({:6.3f}, {:6.3f}, {:6.3f})'.format(k[0], k[1], k[2])
-            if self.weights:
-                w = self.weights[i]
+            if self.__weights:
+                w = self.__weights[i]
                 text += ', w = {}'.format(w)
             text += ' : {}\n'.format(e.__str__())
         return text
 
     def __getitem__(self, index):
-        return self.levels[index]
+        return self.__energylevels[index]
+
 
 class Spectrum(object):
 
@@ -88,9 +105,20 @@ class Spectrum(object):
 
     @property
     def energies(self):
-        """Returns list of energy levels of all spins."""
+        """Returns list of energies e[ispin][ibnd]."""
         list = [disp.energies for disp in self.dispersions]
-        return np.concatenate(list)
+        return list
+
+    @property
+    def energylevels(self):
+        """Returns list of Energylevels l[ispin][ibnd]."""
+        list = []
+        for d in self.dispersions:
+            sum = fu.Energylevels()
+            for el in d.energylevels:
+                sum += el
+            list.append(sum)
+        return list
 
     @property
     def occupations(self):
@@ -229,8 +257,10 @@ class Spectrum(object):
         nspin = QP_E_Eo_Z.shape[0]
         if mode == "QP":
             iener = 0
-        elif mode == "Eo":
+        elif mode == "DFT":
             iener = 1
+        else:
+            print("Error: Did not recognize mode '{}'.".format(mode))
 
         self.spins=[]
         self.dispersions=[]

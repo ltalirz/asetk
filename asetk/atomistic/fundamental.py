@@ -112,9 +112,19 @@ class EnergyLevels(object):
         self.energies += de
         self.fermi  += de
 
-    def __iadd__(self, de):
-        self.energies += de
-        self.fermi  += de
+    def __iadd__(self, b):
+        if isinstance(b, float):
+            self.energies += de
+            self.fermi  += de
+        elif isinstance(b, self.__class__):
+            self.levels += b.levels
+            self.sort()
+            if not self.fermi == b.fermi:
+                self.fermi = None
+        else:
+            raise TypeError("Unsupported operand type(s) for +: '{}' and '{}'")\
+                  .format(self.__class__, type(other))
+
         return self
 
     def __isub__(self, de):
@@ -175,8 +185,8 @@ class EnergyLevels(object):
         gprofile = gaussian(genergies)
 
         energies = self.energies
-        loE=energies[0] - nsigma * sigma
-        hiE=energies[-1] + nsigma * sigma
+        loE=np.min(energies) - nsigma * sigma
+        hiE=np.max(energies) + nsigma * sigma
         E=np.r_[loE:hiE:deltaE]
 
         # Encoding the discretized energy in the array index i makes the code much faster.

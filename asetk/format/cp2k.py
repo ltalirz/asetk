@@ -149,28 +149,36 @@ class Spectrum(object):
 
         lineregex='[^\r\n]*\r?\n'
         fermiregex='Fermi energy:(\s*[\-\d\.]+)'
-        # do not read sections with eigenvectors
-        matches=re.findall(
-                '(ALPHA|BETA)? ?MO EIGENVALUES AND MO OCCUPATION NUMBERS(?!, AND)({l}){l}{l}([\-\.\s\d]*).*?{f}' \
-                    .format(l=lineregex, f=fermiregex), 
-                s, re.DOTALL)
+        mainregex = 'MO EIGENVALUES AND MO OCCUPATION NUMBERS(?!, AND)({l}){l}{l}([\-\.\s\d]*).*?{f}' \
+                .format(l=lineregex, f=fermiregex)
+        spinregex='(?:ALPHA|BETA)\s*'
 
-        # first, we sort out all but the last one
-        last_matches = []
-        for match in reversed(matches):
-            # we take only the ones, which do not contain 'SCF'
-            if re.search('SCF', match[0]):
-                continue
-            elif match[0] == '':
-                last_matches.append(match)
-                break
-            elif match[0] == 'ALPHA' or match[0] == 'BETA' \
-                 and len(last_matches) < 2:
-                last_matches.append(match)
-                continue
-            else:
-                break
+        if re.search(spinregex, s):
+            matches=re.findall(spinregex+mainregex, s, re.DOTALL)
+            last_matches = [ matches[-2], matches[-1] ]
+        else:
+            matches=re.findall(mainregex, s, re.DOTALL)
+            last_matches = [matches[-1]]
 
+        ## first, we sort out all but the last one
+        #last_matches = []
+        #print(matches[0])
+        #for match in reversed(matches):
+        #    #print(match)
+        #    # we take only the ones, which do not contain 'SCF'
+        #    if re.search('SCF', match[0]):
+        #        continue
+        #    elif re.search('ALPHA', match[0]) \
+        #      or re.search('BETA', match[0]):
+        #          if len(last_matches) == 0:
+        #              last_matches.append(match)
+        #              continue
+        #          else:
+        #              last_matches.append(match)
+        #              break
+        #    else:
+        #        last_matches.append(match)
+        #        break
 
         self.spins=[]
         self.energylevels=[]
@@ -178,10 +186,10 @@ class Spectrum(object):
         for match in last_matches:
             # we take only the last ones, which do not contain 'SCF'
             if not re.search('SCF', match[0]):
-                data = np.genfromtxt(StringIO.StringIO(match[2]),
+                data = np.genfromtxt(StringIO.StringIO(match[1]),
                              dtype=[int,float,float])
                 i,E,occ = zip(*data)
-                fermi = float(match[3]) * atc.Ha / atc.eV
+                fermi = float(match[2]) * atc.Ha / atc.eV
                 E     = np.array(E)     * atc.Ha / atc.eV
 
                 levels = fu.EnergyLevels(energies=E,occupations=occ, fermi=fermi)
