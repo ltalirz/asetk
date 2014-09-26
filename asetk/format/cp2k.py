@@ -181,22 +181,23 @@ class Spectrum(object):
         self.energylevels=[]
         spin=0
         for match in last_matches:
-            # we take only the last ones, which do not contain 'SCF'
-            if not re.search('SCF', match[0]):
-                # python2
-                #data = np.genfromtxt(StringIO.StringIO(match[2]),
-                #             dtype=[int,float,float])
-                data = np.genfromtxt(io.BytesIO(match[2].encode()),
-                             dtype=[int,float,float])
-                i,E,occ = list(zip(*data))
-                fermi = float(match[3]) * atc.Ha / atc.eV
-                E     = np.array(E)     * atc.Ha / atc.eV
+            ## we take only the last ones, which do not contain 'SCF'
+            #if not re.search('SCF', match[0]):
 
-                levels = fu.EnergyLevels(energies=E,occupations=occ, fermi=fermi)
-                self.energylevels.append(levels)
-                self.spins.append(spin)
+            # python2
+            #data = np.genfromtxt(StringIO.StringIO(match[2]),
+            #             dtype=[int,float,float])
+            data = np.genfromtxt(io.BytesIO(match[1].encode()),
+                         dtype=[int,float,float])
+            i,E,occ = list(zip(*data))
+            fermi = float(match[2]) * atc.Ha / atc.eV
+            E     = np.array(E)     * atc.Ha / atc.eV
 
-                spin = spin + 1
+            levels = fu.EnergyLevels(energies=E,occupations=occ, fermi=fermi)
+            self.energylevels.append(levels)
+            self.spins.append(spin)
+
+            spin = spin + 1
 
     def read_from_output(self, fname):
         """Reads Spectrum from CP2K output"""
