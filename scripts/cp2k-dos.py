@@ -38,13 +38,24 @@ parser.add_argument(
 parser.add_argument(
     '--sigma',
     metavar='ENERGY',
-    default=0.075,
-    help='The sigma of the Gaussian broadening. FWHM = sigma*sqrt(8*ln(2))')
+    default=None,
+    help='The sigma of the Gaussian broadening. Equivalent to setting \
+          FWHM = sigma*sqrt(8*ln(2)) (kept for backward compatibility).')
 parser.add_argument(
-    '--nsigma',
-    default=10,
-    metavar='INT',
-    help='Reduce computational cost by specifying up to how many sigma the Gaussians should be evaluated')
+    '--FWHM',
+    metavar='ENERGY',
+    default=0.1,
+    help='Full-width half-maximum of broadening function.')
+parser.add_argument(
+    '--bmethod',
+    default='Gaussian',
+    metavar='STRING',
+    help='Method used for broadening: "Gaussian" or "Lorentzian"')
+parser.add_argument(
+    '--bepsilon',
+    default=1e-3,
+    metavar='WEIGHT',
+    help='Reduce computational cost by specifying quantiles that may be neglected.')
 
 args = parser.parse_args()
 
@@ -55,9 +66,11 @@ else:
     spectrum = cp2k.Spectrum.from_output(args.out)
 print(spectrum)
 
+if args.sigma:
+    FWHM = np.sqrt(8.0 * np.log(2.0)) * args.sigma
 
 for e,s in zip(spectrum.energylevels, spectrum.spins):
-    E, DOS = e.dos(sigma = args.sigma, nsigma = args.nsigma, deltaE = args.delta)
+    E, DOS = e.dos(bmethod=args.bmethod, FWHM=args.FWHM, bepsilon=args.bepsilon, delta_e = args.delta)
 
     # Write dos to file
     if args.tofile:

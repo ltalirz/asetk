@@ -6,10 +6,10 @@ Representation of a spectrum
 import re
 import copy  as cp
 import numpy as np
-import StringIO
+import io
 import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as atc
-import cube
+from . import cube
 
 class Spectrum(object):
 
@@ -54,8 +54,8 @@ class Spectrum(object):
         fermis = [el.fermi for el in self.energylevels]
 
         if len( np.unique(fermis) ) != 1:
-            print("There are Fermi energies {}".format(fermis))
-            print("Using the mean {}".format(np.mean(fermis)))
+            print(("There are Fermi energies {}".format(fermis)))
+            print(("Using the mean {}".format(np.mean(fermis))))
 
         return np.mean(fermis)
 
@@ -98,15 +98,12 @@ class Spectrum(object):
             levels.shift(-de)
         return self
 
-    def dos(self, sigma = 0.05, deltaE = 0.005, nsigma = 10):
+    def dos(self, bmethod = 'Gaussian', bepsilon = 1e-3, FWHM = 0.1, delta_e = 0.005):
         """
         Returns [energy, density of states].
         
-        Parameters
-        ----------
-        sigma :  Width of Gaussian broadening [eV]
-        deltaE :  spacing of energy grid [eV]
-        nsigma : Gaussian distribution is cut off after nsigma*sigma
+        For documentation of parameters, see 
+          atk.atomistic.fundamental.EnergyLevels.dos
         """
 
         nspin = len(self.energylevels)
@@ -120,13 +117,13 @@ class Spectrum(object):
 
             DOSes = []
             for el in self.energylevels:
-                E, DOS = el.dos(sigma, deltaE, nsigma)
+                E, DOS = el.dos(bmethod, bepsilon, FWHM, delta_e)
                 DOSes.append(DOS)
 
             return [E, np.sum(DOSes, axis=0)]
 
         elif nspin == 1:
-            return self.energylevels[0].dos(sigma, deltaE, nsigma)
+            return self.energylevels[0].dos(bmethod, bepsilon, FWHM, delta_e)
 
         else:
             print("Error: DOS requested, but no states found.")
@@ -186,10 +183,13 @@ class Spectrum(object):
         for match in last_matches:
             # we take only the last ones, which do not contain 'SCF'
             if not re.search('SCF', match[0]):
-                data = np.genfromtxt(StringIO.StringIO(match[1]),
+                # python2
+                #data = np.genfromtxt(StringIO.StringIO(match[2]),
+                #             dtype=[int,float,float])
+                data = np.genfromtxt(io.BytesIO(match[2].encode()),
                              dtype=[int,float,float])
-                i,E,occ = zip(*data)
-                fermi = float(match[2]) * atc.Ha / atc.eV
+                i,E,occ = list(zip(*data))
+                fermi = float(match[3]) * atc.Ha / atc.eV
                 E     = np.array(E)     * atc.Ha / atc.eV
 
                 levels = fu.EnergyLevels(energies=E,occupations=occ, fermi=fermi)
@@ -207,9 +207,12 @@ class Spectrum(object):
             print("Error: Unable to parse CP2K output file")
             return
 
+
         # We are interested only in the last run (result of calculation)
         rundatas = re.findall(
-                'Eigenvalues of the occupied subspace .*?HOMO', s, re.DOTALL)
+                'Eigenvalues of the occupied subspace .*?FORCE_EVAL', s, re.DOTALL)
+        #rundatas = re.findall(
+        #        'Eigenvalues of the occupied subspace .*?HOMO', s, re.DOTALL)
         rundata = rundatas[-1]
 
         # each spin may have occupied & unoccupied levels + fermi energy

@@ -163,31 +163,50 @@ class EnergyLevels(object):
     def __getitem__(self, index):
         return self.levels[index]
 
-    def dos(self, sigma = 0.05, deltaE = 0.005, nsigma = 10):
+    def dos(self, bmethod = 'Gaussian', bepsilon = 1e-3, FWHM = 0.1, delta_e = 0.005):
         """
         Returns [energy, density of states].
         
         Parameters
         ----------
-        sigma :  Width of Gaussian broadening [eV]
-        deltaE :  spacing of energy grid [eV]
-        nsigma : Gaussian distribution is cut off after nsigma*sigma
+        bmethod: Method used for broadening ('Gaussian' or 'Lorentzian')
+        bepsilon: Convolution is performed with broadening function in range
+            [E-Eb, E+Eb] where Eb is determined such that the integrated weight
+            of the broadening function outside of [-Eb, Eb] is < bepsilon.
+        FWHM: Full-width of broadening function at half-maximum [eV]
+        delta_e: spacing of energy grid [eV]
         """
 
-        if sigma/deltaE < 10:
-            print("Warning: sigma/deltaE < 10. Gaussians might not be sampled well.")
-        gaussian = lambda x: 1/(np.sqrt(2*np.pi)*sigma) \
-                             * np.exp(-x**2/(2*sigma**2))
+        import scipy.special as scsp
+        # Prepare broadening functions for later convolution
+        # quantile function quantile(y) = x is defined such that
+        # the integral of the probability density from -\infty to x equals y.
+        if bmethod == 'Gaussian':
+            sigma = FWHM / np.log(8 * np.sqrt(2))
+            quantile = lambda y: np.sqrt(2) * scsp.erfinv(2.0*y -1.0) * sigma
+            broadening = lambda x: 1/(sigma * np.sqrt(2*np.pi)) \
+                                 * np.exp( - x**2 / (2 * sigma**2) )
+        elif bmethod == 'Lorentzian':
+            gamma = FWHM * 0.5
+            quantile = lambda y: np.tan(np.pi * (y - 0.5)) * gamma
+            broadening = lambda x: 1/np.pi * gamma / (x**2 + gamma**2)
+        else:
+            print("Error: Broadening method \"{}\" not recognized."\
+                  .format(bmethod))
+
+        eb = -quantile(bepsilon * 0.5)
+        if FWHM / delta_e < 5:
+            print("Warning: FWHM / delta_e < 5. Broadening function might not be sampled well.")
 
         # Tabulate the Gaussian in range sigma * nsigma
-        limit = sigma * nsigma
-        genergies = np.r_[-limit:limit:deltaE]
-        gprofile = gaussian(genergies)
+        benergies = np.r_[-eb : eb : delta_e]
+        bprofile = broadening(benergies)
 
+        self.sort()
         energies = self.energies
-        loE=np.min(energies) - nsigma * sigma
-        hiE=np.max(energies) + nsigma * sigma
-        E=np.r_[loE:hiE:deltaE]
+        loE=energies[0] - eb
+        hiE=energies[-1] + eb
+        E=np.r_[loE : hiE : delta_e]
 
         # Encoding the discretized energy in the array index i makes the code much faster.
         # Create dos of delta-peaks to be folded with Gaussian
@@ -195,7 +214,8 @@ class EnergyLevels(object):
         for e in energies:
             # In order to be able to fold with tabulated Gaussian, we have to place
             # levels *on* the grid. I.e. level spacing cannot be smaller than deltaE.
-            n = int((e-loE)/deltaE)
+            n = int((e-loE)/delta_e)
+         
             # Note: DOS should be calculated for unoccupied levels as well!
             #if o is not None:
             #    DOSdelta[n] += o
@@ -203,7 +223,7 @@ class EnergyLevels(object):
             DOSdelta[n] += 1
         # Convolve with gaussian, keeping same dimension
         # Can be made even faster by using fftconvolve
-        DOS = np.convolve(DOSdelta,gprofile, mode='same')
+        DOS = np.convolve(DOSdelta,bprofile, mode='same')
 
         return np.array([E, DOS])
 
