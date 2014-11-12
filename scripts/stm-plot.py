@@ -30,7 +30,10 @@ def resample(plane, cube, rep=None, nsamples=1000):
     xnew = np.linspace(extent[0], extent[1], nsamples)
     ynew = np.linspace(extent[2], extent[3], nsamples)
 
-    resampled = mlab.griddata(x, y , plane, xnew, ynew)
+    # default interp='nn' needs mpl_toolkits.natgrid,
+    # which doesn't work on some machines
+    #resampled = mlab.griddata(x, y , plane, xnew, ynew)
+    resampled = mlab.griddata(x, y , plane, xnew, ynew, interp='linear')
     # for some reason, I need to revert the x axis for imshow
     resampled = resampled[::-1,:]
 
