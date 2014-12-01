@@ -13,7 +13,7 @@ import cube
 class Axis(object):
     """Represents an axis of an IGOR wave"""
 
-    def __init__(self, symbol, min, max, label, name):
+    def __init__(self, symbol, min, max, label, name=""):
         self.symbol = symbol
         self.min = min
         self.max = max
@@ -24,7 +24,7 @@ class Axis(object):
 class Wave(object):
     """A class template for IGOR waves of generic dimension"""
 
-    def __init__(self, data=None, name=None, axes=None):
+    def __init__(self, data, axes, name="from_python"):
         """Initialize IGOR wave of generic dimension"""
         self.data = data
         self.name = name
@@ -40,38 +40,131 @@ class Wave(object):
             dimstring += "{}, ".format(self.data.shape[i])
         dimstring = dimstring[:-2] + ")" 
 
-        s += "WAVES/N={}  {}\n".format(dimstring, self.name)
+        name = "" if self.name is None else self.name
+        s += "WAVES/N={}  {}\n".format(dimstring, name)
         s += "BEGIN\n"
-        for line in self.data:
-            s += "{:12.6f}\n".format(line)
+        s += self.print_data()
         s += "END\n"
         for ax in self.axes:
             s += "X SetScale {symb} {min},{max}, \"{label}\", {name};\n"\
                   .format(symb=ax.symbol, min=ax.min, max=ax.max,\
-                          label=ax.label, name=self.name)
+                          label=ax.label, name=name)
         return s
+
+    def print_data(self):
+        """Determines how to print the data block.
+        
+        To be implemented by subclasses."""
+
+
 
 class Wave1d(Wave):
     """1d Igor wave"""
-    def __init__(self, data=None, name=None, xmin=None, xmax=None,
-                 xlabel=None, ylabel=None):
-        """Initialize 1d IGOR wave"""
-        x = Axis(symbol = 'x', min=xmin, max=xmax, label=xlabel, name=name)
-        y = Axis(symbol = 'y', min=np.min(data), max=np.max(data),
-                  label=ylabel, name=name)
-        super(Wave1d, self).__init__(data, name, [x,y])
+    
+    default_parameters = dict(
+        xmin = 0.0,
+        xmax = None,
+        xlabel = 'x',
+        ylabel = 'y',
+    )
 
+    def __init__(self, data=None, axes=None, name="1d", **kwargs):
+        """Initialize 1d IGOR wave"""
+        super(Wave1d, self).__init__(data, axes, name) 
+
+        self.parameters = self.default_parameters
+        for key, value in kwargs.items():
+            if key in self.parameters:
+                self.parameters[key] = value
+            else:
+                raise KeyError("Unknown parameter {}".format(key))
+
+        if axes is None:
+            p=self.parameters
+            x = Axis(symbol='x', min=p['xmin'], max=p['xmax'], label=p['xlabel'])
+            self.axes = [x]
+
+    def print_data(self):
+        s = ""
+        for line in self.data:
+            s += "{:12.6f}\n".format(float(line))
+         
 
 
 class Wave2d(Wave):
     """2d Igor wave"""
 
+    default_parameters = dict(
+        xmin = 0.0,
+        xmax = None,
+        xlabel = 'x',
+        ymin = 0.0,
+        ymax = None,
+        ylabel = 'y',
+    )
+ 
+    def __init__(self, data=None, axes=None, name=None, **kwargs):
+        """Initialize 2d Igor wave
+
+        Parameters
+        ----------
+        
+         * data 
+         * name 
+         * xmin, xmax, xlabel         
+         * ymin, ymax, ylabel         
+        """
+        super(Wave2d, self).__init__(data, axes=axes, name=name)
+
+        self.parameters = self.default_parameters
+        for key, value in kwargs.items():
+            if key in self.parameters:
+                self.parameters[key] = value
+            else:
+                raise KeyError("Unknown parameter {}".format(key))
+
+        if axes is None:
+            p=self.parameters
+            x = Axis(symbol='x', min=p['xmin'], max=p['xmax'], label=p['xlabel'])
+            y = Axis(symbol='y', min=p['ymin'], max=p['ymax'], label=p['ylabel'])
+            self.axes = [x,y]
+
+
+    def print_data(self):
+        """Determines how to print the data block"""
+        s = ""
+        for line in self.data:
+            for x in line:
+                s += "{:12.6f} ".format(x)
+            s += "\n"
+
+        return s
+         
+
     @classmethod
     def from_cube(cls, cube, dir, index, fname):
-        """Creates 3d Igor Wave from Gaussian Cube file"""
+        """Creates 2d Igor Wave from Gaussian Cube file
+        
+        Parameters
+        ----------
+         * cube : format.cube object containing cube file
+         * dir  : 'x', 'y' or 'z'
+         * index: index of plane to be taken
+         """
         tmp = Wave3d()
         tmp.read_from_cube(fname)
         return tmp
+
+    def read_from_cube(self, cube, dir, index, fname=None):
+        # To be implemented
+        dir
+        #super(Wave2d, self).__init__(
+        #        data=cube.get_plane(dir, index),
+        #        name=name,
+        #        axes=)
+        #        comment=comment,
+        #        t,origin,atoms,data)
+        
 
 
 class Wave3d(Wave):
