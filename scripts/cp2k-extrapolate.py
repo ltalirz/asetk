@@ -66,28 +66,30 @@ print(spectrum)
 # Reading Hartree potential
 
 # Reading cube files is the most time consuming part of the routine.
-# Since we need only one plane out of each cube file,
+# Since we need only one plane from the Hartree potential,
 # we save it to disk for reuse.
 print("Reading Hartree potential from {}".format(args.hartree))
-hartree_planefile = "{f}.z{d}".format(f=args.hartree,d=args.extent)
+hartree_planefile = "{}.z{:.2f}".format(args.hartree,args.height)
 
 hartree_plane = None
 if( os.path.isfile(hartree_planefile) ):
     hartree_plane = np.genfromtxt(hartree_planefile)
 else:
-    hartree_cube = cube.Cube.from_file(args.hartree)
-    hartree_cube.read_cube_file(hartree_cube.filename,read_data=True)
-
+    hartree_cube = cube.Cube.from_file(args.hartree, read_data=True)
     hartree_plane = hartree_cube.get_plane_above_atoms( \
             args.height*a02A, verbose=True)
-    # For STS at zero temperature, 
-    # the occupation of the level in the calculation is irrelevant
-    #plane = plane * tmp.occupation
     np.savetxt(hartree_planefile, hartree_plane)
 
 hartree_avg = np.mean(hartree_plane) / eV2Ha
-print("Average Hartree potential on extrapolation surface is {:+.4f} eV\n"\
-        .format(hartree_avg))
+hartree_min = np.min(hartree_plane) / eV2Ha
+hartree_max = np.max(hartree_plane) / eV2Ha
+print("Hartree potential on extrapolation surface:")
+print("   min {:+.4f} eV, max {:+4f} eV, avg {:+.4f} eV" \
+        .format(hartree_min, hartree_max, hartree_avg))
+if hartree_max - hartree_min > 1.0:
+    print("Warning: min and max differ by more than 1 eV!")
+    print("Assumption of constant Hartree potential is violated.")
+print("")
 
 #bar = progressbar.ProgressBar(niter=len(args.cubes))
 #
@@ -103,7 +105,11 @@ for fname in args.cubes:
     print("Reading {}".format(fname))
     cube = cp2k.WfnCube.from_file(fname, read_data=True)
 
-    cube.energy = spectrum.energylevels[cube.spin-1].levels[cube.wfn-1].energy
+    try:
+        cube.energy = spectrum.energylevels[cube.spin-1].levels[cube.wfn-1].energy
+    except:
+        print("Error: Missing energy level for cube file {}.")
+        print("       Did you use the correct levels file?".format(fname))
     print("Spin {}, n = {}, E = {:.4f} eV"\
             .format(cube.spin, cube.wfn, cube.energy))
 
@@ -118,7 +124,7 @@ for fname in args.cubes:
 
     # Prepare matrix with prefactors that propagates Fourier components
     # to next z-plane
-    print("Calculating prefactors {}".format(fname))
+    #print("Calculating prefactors")
     p = lambda i,j: np.exp( -np.sqrt( (i*dKX)**2 + (j*dKY)**2 - 2*E) )
     prefactors = np.zeros(fourier.shape)
     for i in range(nKX):
