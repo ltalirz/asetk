@@ -220,9 +220,9 @@ class Spectrum(object):
         occupieddatas = re.findall(
                 'Eigenvalues of the occupied subspace spin([\.\-\d\s]*)', 
                 rundata, re.DOTALL)
-        #unoccupieddatas = re.findall('Lowest Eigenvalues of the unoccupied subspace spin.*?iterations([\.\-\d\s]*)', rundata, re.DOTALL)
+        #unoccupieddatas = re.findall('Lowest eigenvalues of the unoccupied subspace spin.*?iterations([\.\-\d\s]*)', rundata, re.DOTALL)
         unoccupieddatas = re.findall(
-                'Lowest Eigenvalues of the unoccupied subspace spin(.*?\d{8}[\.\-\d\s]*)',
+                'Lowest (?:e|E)igenvalues of the unoccupied subspace spin(.*?\d{8}[\.\-\d\s]*)',
                 rundata, re.DOTALL)
         levelregex = '\-?\d\.\d{8}'
 

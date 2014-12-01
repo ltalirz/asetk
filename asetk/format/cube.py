@@ -3,6 +3,7 @@
 Provides a Cube class with reading and writing functions
 """
 
+from __future__ import division
 import numpy as np
 import copy  as cp
 import asetk.atomistic.fundamental as fu
@@ -58,6 +59,10 @@ class Cube(object):
 
     @property
     def cell(self):
+        """Returns cell of grid.
+
+        Unit vectors are cell[0], cell[1], cell[2].
+        """
         return self.atoms.cell
 
 
@@ -156,9 +161,29 @@ class Cube(object):
             # The conversion to float is even more expensive.
             self.data = np.array(f.read().split(), dtype=float)
             self.data = self.data.reshape(shape)
+            #self.data.shape = shape
             #if axes != [0, 1, 2]:
 
         f.close()
+
+    def resize(self, shape):
+        """Resize dimensions of grid
+
+        If dimensions are enlarged, additional values are filled by zeros.
+        Cell vectors are updated accordingly.
+        """
+        shape_old = self.shape
+        for dim in range(3):
+            self.cell[dim] = shape[dim] * self.cell[dim] / shape_old[dim]
+
+        tmp = np.zeros(shape)
+        m = np.min([shape, self.shape], axis=0)
+        tmp[:m[0], :m[1],:m[2]] = self.data[:m[0], :m[1],:m[2]] 
+        self.data = tmp
+
+        # Note: numpy's resize function always adds space
+        #       at the *end* of the array.
+        #self.data = np.resize(self.data, shape)
 
     def write_cube_file(self, fname=None):
         """Writes Cube object to file
@@ -191,26 +216,42 @@ class Cube(object):
 
         # TODO: Make 8-column format according to specs
         self.data.tofile(f, sep='\n', format='%12.6e') 
+        #fmt=' %12.6e'
+        #for ix in range(self.shape[0]):
+        #    for iy in range(self.shape[1]):
+        #        for line in range(self.shape[2] // 8 ):
+        #            f.write(fmt*8.format(self.data[ix, iy, line*8 : (line+1)*8]))
+        #        left = self.shape[2] % 8
+        #        f.write(fmt*left.format(self.data[ix)
 
         f.close()
+
+    def get_index_above_atoms(self, d, verbose=False):
+        """Returns z-index of plane at z=d above topmost atom
+        
+        d must be given in Angstroms.
+        """
+
+        zmax = np.max(self.atoms.positions[:,2])
+        zplane = zmax + d
+        dz = np.linalg.norm(self.dz)
+
+        iplane = int(round(zplane / dz))
+        zplanereal = iplane * dz
+
+        if verbose:
+            print("Precise height above atoms: {} Angstroms" \
+                   .format(zplanereal - zmax))
+        return iplane 
 
     def get_plane_above_atoms(self, d, verbose=False):
         """Returns plane given by z=d above topmost atom
         
         d should be given in Angstroms.
         """
-        zmax = np.max(self.atoms.positions[:,2])
-        zplane = zmax + d
-        dz = np.linalg.norm(self.dz)
 
-        iplane = int (zplane / dz)
-        zplanereal = iplane * dz
-
-        if verbose:
-            print("Precise height above atoms: {} Angstroms" \
-                   .format(zplanereal - zmax))
-
-        return self.data[:,:,iplane]
+        iplane =  self.get_index_above_atoms(d, verbose=verbose)
+        return self.get_plane('z', iplane)
 
     def get_isosurface_above_atoms(self, v, zmin=0, on_grid=False):
         """Returns z-values of isosurface
@@ -325,11 +366,30 @@ class Cube(object):
             # for some reason, I need to revert the x axis for imshow
             plane = resampled[::-1,:]
 
-        if extent or replica or resample:
+        if return_extent or replica or resample:
            return [plane, extent]
         else:
            return plane
 
+    def set_plane(self, dir, i, plane):
+        """Sets plane normal to direction 'dir' at index 'i' """
+
+        nx, ny, nz = self.nx, self.ny, self.nz
+        npx, npy = plane.shape
+
+        if dir is 'x' and npx == ny and npy == nz:
+            self.data[i, :, :] = plane
+        elif dir is 'y' and npx == nz and npy == nx:
+            self.data[:, i, :] = plane
+        elif dir is 'z' and npx == nx and npy == ny:
+            self.data[:, :, i] = plane
+        else:
+            print("Direction '{}' and shape '{}' are not compatible."\
+                    .format(dir, plane.shape))
+            print("Direction must be 'x', 'y' or 'z'.")
+            return False
+
+        return True
          
     def get_avg(self, dir):
         """Returns average value of cube file along direction 'dir'."""
