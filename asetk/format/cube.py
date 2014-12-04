@@ -43,6 +43,7 @@ class Cube(object):
         self.origin = origin
         self.atoms = atoms
         self.data = data
+        self.shape_ = None   # stores shape, if grid isn't read
 
     @classmethod
     def from_cube(cls, cube):
@@ -76,15 +77,24 @@ class Cube(object):
  
     @property
     def nx(self):
-        return self.shape[0]
+        if self.data is None:
+            return self.shape_[0]
+        else:
+            return self.shape[0]
 
     @property
     def ny(self):
-        return self.shape[1]
+        if self.data is None:
+            return self.shape_[1]
+        else:
+            return self.shape[1]
 
     @property
     def nz(self):
-        return self.shape[2]
+        if self.data is None:
+            return self.shape_[2]
+        else:
+            return self.shape[2]
 
     @property
     def dx(self):
@@ -137,6 +147,7 @@ class Cube(object):
             #if n % 2 == 1:
             #    n += 1
             cell[i] = n * np.array([x, y, z])
+        self.shape_ = shape
         cell = cell * b2A
 
         numbers = np.empty(natoms, int)

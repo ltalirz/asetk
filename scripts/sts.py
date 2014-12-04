@@ -4,6 +4,7 @@ import scipy.special as scsp
 import argparse
 import asetk.format.cp2k as cp2k
 import asetk.util.progressbar as progressbar
+import asetk.atomistic.constants as constants
 import os.path
 
 # Define command line parser
@@ -190,9 +191,14 @@ stscube.comment = "Range [{:4.2f} V, {:4.2f} V], de {:4.3f} V, FWHM {:4.3f} V {}
 shape = np.array(stscube.data.shape)
 shape[2] = int( (args.emax - args.emin) / args.de) + 1
 stscube.data = np.zeros(shape, dtype=float)
-stscube.origin[2] = args.emin
 
-zrange = np.linspace(stscube.origin[2], args.emax, shape[2])
+# During export, these numbers will be
+# "converted from Angstrom to Bohr"
+a02A = constants.a0 / constants.Angstrom
+stscube.origin[2] = args.emin * a02A
+stscube.cell[2] = np.array([0,0,args.emax]) * a02A
+
+zrange = np.linspace(args.emin, args.emax, shape[2])
 
 if args.print_weights:
     wfile = open(args.print_weights, 'w')
