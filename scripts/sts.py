@@ -140,9 +140,12 @@ if args.eref is not None:
     spectrum.shift(-args.eref)
     print("Taking {s} eV as zero energy reference.".format(s=args.eref))
 else:
-    for spin, levels in zip(spectrum.spins, spectrum.energylevels):
-        levels.shift(-levels.fermi)
-    print("Fermi energy is taken as zero energy reference.")
+    fermi = np.mean([l.fermi for l in spectrum.energylevels])
+    print("Taking Fermi energy {:.3f} eV as zero energy reference.".format(fermi))
+    if len(spectrum.energylevels) > 1:
+        print("(Average Fermi of different spins)")
+    for levels in spectrum.energylevels:
+        levels.shift(-fermi)
 
 # Reading headers of cube files
 cubes = []
@@ -173,11 +176,11 @@ for spin, levels in zip(spectrum.spins, spectrum.energylevels):
                        required_cubes.append(cube)
                        found = True
 
-                       print("Found cube file for spin {s}, energy {e}, occupation {o}"\
+                       print("Found cube file for spin {s}, energy {e:.6f}, occupation {o}"\
                              .format(s=spin+1,e=e, o=o))
                        break
                if not found:
-                   print("Missing cube file for spin {s}, energy {e}, occupation {o}"\
+                   print("Missing cube file for spin {s}, energy {e:.6f}, occupation {o}"\
                            .format(s=spin+1,e=e,o=o))
 
 # Prepare new cube file
