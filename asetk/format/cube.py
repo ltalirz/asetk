@@ -255,14 +255,16 @@ class Cube(object):
                    .format(zplanereal - zmax))
         return iplane 
 
-    def get_plane_above_atoms(self, d, verbose=False):
+    def get_plane_above_atoms(self, d, verbose=False, return_extent=None,
+            replica=None, resample=None):
         """Returns plane given by z=d above topmost atom
         
         d should be given in Angstroms.
         """
 
         iplane =  self.get_index_above_atoms(d, verbose=verbose)
-        return self.get_plane('z', iplane)
+        return self.get_plane('z', iplane, return_extent=return_extent,
+                              replica=replica, resample=resample)
 
     def get_isosurface_above_atoms(self, v, zmin=0, on_grid=False):
         """Returns z-values of isosurface
@@ -328,13 +330,15 @@ class Cube(object):
     def get_plane(self, dir, i, return_extent=None, replica=None, resample=None):
         """Returns plane normal to direction 'dir' at index 'i'
          
-        If either 'return_extent', 'replica' or 'resample' is set,
-        returns [plane, extent].
-     
-        - return_extent=True will return extent=[x0, xmax, y0, ymax] suitable
-          for plotting with matplotlib
-        - replica=[3,4] will create 3x4 replicas of the original plane
-        - resample=[300, 400] will resample on rectangular grid.
+        * return_extent
+            If True, returns [plane, extent], where extent=[x0, xmax, y0, ymax].
+            Note: For plotting with matplotlib, you still need to
+                  plane = plane.swapaxes(0,1)
+        * replica
+            replica=[3,4] will create 3x4 replicas of the original plane
+        * resample
+            resample=[300, 400] will resample on rectangular grid with
+            300x400 points.
 
         """
 
@@ -344,43 +348,50 @@ class Cube(object):
 
         if dir is 'x':
             plane = self.data[i, :, :]
-            dum, dx, dy = dvs
-            extent = [o[1], o[1]+ls[1], o[2], o[2]+ls[2]]
+            dum, pdx, pdy = dvs
+            pextent = [o[1], o[1]+ls[1], o[2], o[2]+ls[2]]
         elif dir is 'y':
             plane = self.data[:, i, :]
-            dy, dum, dx = dvs
-            extent = [o[2], o[2]+ls[2], o[0], o[0]+ls[0]]
+            pdy, dum, pdx = dvs
+            pextent = [o[2], o[2]+ls[2], o[0], o[0]+ls[0]]
         elif dir is 'z':
             plane = self.data[:, :, i]
             dx, dy, dum = dvs
-            extent = [o[0], o[0]+ls[0], o[1], o[1]+ls[1]]
+            pextent = [o[0], o[0]+ls[0], o[1], o[1]+ls[1]]
         else:
             print("Cannot recognize direction '{}'".format(dir))
             print("Direction must be 'x', 'y' or 'z'.")
 
-        if replica:
-            plane = np.tile(plane, replica)
-            extent[0] *= replica[0]
-            extent[1] *= replica[1]
-
         if resample:
             line = plane.flatten()
-            nx, ny = plane.shape
-            pos   = [ i*dx+j*dy for i in range(nx) for j in range(ny) ]
+            pnx, pny = plane.shape
+            pos   = [ i*pdx+j*pdy for i in range(pnx) for j in range(pny) ]
             x,y,z = zip(*pos)
          
-            extent = (np.min(x),np.max(x),np.min(y),np.max(y))
-            xnew = np.linspace(extent[0], extent[1], resample[0])
-            ynew = np.linspace(extent[2], extent[3], resample[1])
+            pextent = (np.min(x),np.max(x),np.min(y),np.max(y))
+            xnew = np.linspace(pextent[0], pextent[1], resample[0])
+            ynew = np.linspace(pextent[2], pextent[3], resample[1])
          
-            resampled = mlab.griddata(x, y , plane.flatten(), xnew, ynew)
+            # default interp='nn' needs mpl_toolkits.natgrid,
+            # which doesn't work on some machines
+            resampled = mlab.griddata(x, y, plane.flatten(), 
+                                      xnew, ynew, interp='linear')
             # for some reason, I need to revert the x axis for imshow
             plane = resampled[::-1,:]
 
+        if replica:
+            plane = np.tile(plane, replica)
+            pextent[1] = (pextent[1] - pextent[0]) * replica[0]
+            pextent[3] = (pextent[3] - pextent[2]) * replica[1]
+
         if return_extent or replica or resample:
-           return [plane, extent]
+            # matplotlib will plot the 1st index along y
+            # and the 2nd index along x
+            #plane = plane.swapaxes(0,1)
+
+            return [plane, pextent]
         else:
-           return plane
+            return plane
 
     def set_plane(self, dir, i, plane):
         """Sets plane normal to direction 'dir' at index 'i' """
