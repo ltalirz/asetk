@@ -5,7 +5,9 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-from asetk.format.cube import Cube
+
+import asetk.format.cube as cube
+import asetk.format.igor as igor
 import sys
 
 def resample(plane, cube, rep=None, nsamples=1000):
@@ -84,13 +86,20 @@ parser.add_argument(
     type=float,
     help='Range of color scale in plot')
 parser.add_argument(
-    '--plotrep',
+    '--replicate',
     default=None,
     nargs='+',
     type=int, 
     metavar='nx ny',
     help='Number of replica along x and y.\
           If just one number is specified, it is taken for both x and y.')
+parser.add_argument(
+    '--format',
+    metavar='DESCRIPTION',
+    default='plain',
+    help='Specifies format of output file. Can be \'plain\' (matrix of numbers)\
+          or \'igor\' (suitable for import into Igor Pro).'
+)
 
 args = parser.parse_args()
 
@@ -104,16 +113,17 @@ if not jobs:
     print("No isovalues/heights specified. Exiting...")
     sys.exit()    
 
-if args.plotrep is not None:
-    if len(args.plotrep) == 1:
-        args.plotrep = [ args.plotrep, args.plotrep]
-    elif len(args.plotrep) !=2:
-        print('Invalid number of replicas requested')
+if args.replicate is not None:
+    if len(args.replicate) == 1:
+        args.replicate = [ args.replicate, args.replicate]
+    elif len(args.replicate) !=2:
+        print('Invalid specification of replicas. \
+               Please specify --replicate <nx> <ny>.')
 
 # Iterate over supplied cube files
 for fname in args.stmcubes:
     print("\nReading {n} ".format(n=fname))
-    c = Cube.from_file(fname, read_data=True)
+    c = cube.Cube.from_file(fname, read_data=True)
 
     for v,kind in jobs:
         planefile = None
@@ -127,12 +137,32 @@ for fname in args.stmcubes:
          
         plane = None
         if kind == 'h':
-            plane = c.get_plane_above_atoms(v)
+            plane, extent = c.get_plane_above_atoms(v, return_extent=True, 
+                              replica=args.replicate)
         elif kind == 'i':
-            plane = c.get_isosurface_above_atoms(v, zmin=args.zmin)
+            # todo: still to implement..
+            plane, extent = c.get_isosurface_above_atoms(v, zmin=args.zmin,
+                    return_extent=True, replica=args.replicate)
 
-        print("\nWriting {} ".format(planefile))
-        np.savetxt(planefile, plane, header=header)
+        if args.format == 'plain':
+            planefile += '.dat'
+            print("Writing {} ".format(planefile))
+            np.savetxt(planefile, plane, header=header)
+        elif args.format == 'igor':
+            igorwave = igor.Wave2d(
+                    data=plane, 
+                    xmin=extent[0],
+                    xmax=extent[1],
+                    xlabel='x [Angstroms]',
+                    ymin=extent[2],
+                    ymax=extent[3],
+                    ylabel='y [Angstroms]',
+            )
+            planefile += '.itx'
+            print("Writing {} ".format(planefile))
+            igorwave.write(planefile)
+        else:
+            print("Error: Unknown format {}.".format(args.format))
 
         if args.plot:
             plotfile = planefile + str('.png')
@@ -150,7 +180,7 @@ for fname in args.stmcubes:
             #    vmin = 0
 
             # replicate and resample
-            plane, extent = resample(plane, c, rep=args.plotrep)
+            plane, extent = resample(plane, c, rep=args.replicate)
 
             cax = plt.imshow(plane, extent=extent, 
                              cmap='gray', vmin=vmin, vmax=vmax)

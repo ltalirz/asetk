@@ -13,21 +13,29 @@ import cube
 class Axis(object):
     """Represents an axis of an IGOR wave"""
 
-    def __init__(self, symbol, min, max, label, name=""):
+    def __init__(self, symbol, min, max, unit, wavename=None):
         self.symbol = symbol
         self.min = min
         self.max = max
-        self.label = label
-        self.name = name
+        self.unit = unit
+        self.wavename = wavename
+
+    def __str__(self):
+        max = 0 if self.max is None else self.max
+        s = "X SetScale {symb} {min},{max}, \"{unit}\", {name};\n"\
+              .format(symb=self.symbol, min=self.min, max=max,\
+                      unit=self.unit, name=self.wavename)
+        return s
+
 
 
 class Wave(object):
     """A class template for IGOR waves of generic dimension"""
 
-    def __init__(self, data, axes, name="from_python"):
+    def __init__(self, data, axes, name=None):
         """Initialize IGOR wave of generic dimension"""
         self.data = data
-        self.name = name
+        self.name = "PYTHON_IMPORT" if name is None else name
         self.axes = axes
 
     def __str__(self):
@@ -40,15 +48,12 @@ class Wave(object):
             dimstring += "{}, ".format(self.data.shape[i])
         dimstring = dimstring[:-2] + ")" 
 
-        name = "" if self.name is None else self.name
-        s += "WAVES/N={}  {}\n".format(dimstring, name)
+        s += "WAVES/N={}  {}\n".format(dimstring, self.name)
         s += "BEGIN\n"
         s += self.print_data()
         s += "END\n"
         for ax in self.axes:
-            s += "X SetScale {symb} {min},{max}, \"{label}\", {name};\n"\
-                  .format(symb=ax.symbol, min=ax.min, max=ax.max,\
-                          label=ax.label, name=name)
+            s += str(ax)
         return s
 
     def print_data(self):
@@ -56,6 +61,10 @@ class Wave(object):
         
         To be implemented by subclasses."""
 
+    def write(self, fname):
+        f=open(fname, 'w')
+        f.write(str(self))
+        f.close()
 
 
 class Wave1d(Wave):
@@ -87,7 +96,7 @@ class Wave1d(Wave):
     def print_data(self):
         s = ""
         for line in self.data:
-            s += "{:12.6f}\n".format(float(line))
+            s += "{:12.6e}\n".format(float(line))
          
 
 
@@ -96,10 +105,10 @@ class Wave2d(Wave):
 
     default_parameters = dict(
         xmin = 0.0,
-        xmax = None,
+        xmax = 1.0,
         xlabel = 'x',
         ymin = 0.0,
-        ymax = None,
+        ymax = 1.0,
         ylabel = 'y',
     )
  
@@ -125,8 +134,10 @@ class Wave2d(Wave):
 
         if axes is None:
             p=self.parameters
-            x = Axis(symbol='x', min=p['xmin'], max=p['xmax'], label=p['xlabel'])
-            y = Axis(symbol='y', min=p['ymin'], max=p['ymax'], label=p['ylabel'])
+            x = Axis(symbol='x', min=p['xmin'], max=p['xmax'], 
+                     unit=p['xlabel'], wavename=self.name)
+            y = Axis(symbol='y', min=p['ymin'], max=p['ymax'], 
+                     unit=p['ylabel'], wavename=self.name)
             self.axes = [x,y]
 
 
@@ -135,7 +146,7 @@ class Wave2d(Wave):
         s = ""
         for line in self.data:
             for x in line:
-                s += "{:12.6f} ".format(x)
+                s += "{:12.6e} ".format(x)
             s += "\n"
 
         return s
