@@ -10,42 +10,11 @@ import asetk.format.cube as cube
 import asetk.format.igor as igor
 import sys
 
-def resample(plane, cube, rep=None, nsamples=1000):
-    """Resamples data in cartesian coordinates.
-
-    Assumptions:
-    - data.shape == [self.data.shape[i] for i in axes]
-    """
-    nx,ny,nz    = cube.data.shape
-    dx,dy,dz    = cube.atoms.cell / cube.data.shape
-
-    if rep:
-        plane = np.tile(plane, rep)
-        nx *= rep[0]
-        ny *= rep[1]
-        
-    plane = plane.flatten()
-    pos   = [ i*dx+j*dy for i in range(nx) for j in range(ny) ]
-    x,y,z = zip(*pos)
-
-    extent = (np.min(x),np.max(x),np.min(y),np.max(y))
-    xnew = np.linspace(extent[0], extent[1], nsamples)
-    ynew = np.linspace(extent[2], extent[3], nsamples)
-
-    # default interp='nn' needs mpl_toolkits.natgrid,
-    # which doesn't work on some machines
-    #resampled = mlab.griddata(x, y , plane, xnew, ynew)
-    resampled = mlab.griddata(x, y , plane, xnew, ynew, interp='linear')
-    # for some reason, I need to revert the x axis for imshow
-    resampled = resampled[::-1,:]
-
-    return [resampled, extent]
-
-
 # Define command line parser
 parser = argparse.ArgumentParser(
-    description='Plots Scanning Tunneling Microscopy Image from Gaussian Cube file.')
-parser.add_argument('--version', action='version', version='%(prog)s 17.03.2014')
+    description='Calculates Scanning Tunneling Microscopy Image \
+                 from Gaussian Cube file.')
+parser.add_argument('--version', action='version', version='%(prog)s 17.12.2014')
 parser.add_argument(
     '--stmcubes',
     nargs='+',
@@ -58,20 +27,43 @@ parser.add_argument(
     metavar='LIST',
     type=float,
     help='Tip-height above the topmost atom for an STM-image in constant-z\
-          mode. 3 Angstroms is typically reasonable.')
+          mode [Angstroms]. 3 Angstroms is typically reasonable.')
 parser.add_argument(
     '--isovalues',
     nargs='+',
     metavar='LIST',
     type=float,
-    help='Values of the isosurface for an STM-image in constant current mode.\
-          1e-7 is typically a good start.')
+    help='Values of the isosurface for an STM-image in constant current mode\
+          [electrons/a0^3]. 1e-7 is typically a good start.')
 parser.add_argument(
     '--zmin',
     metavar='HEIGHT',
     type=float,
     default=0.0,
     help='Minimum z-height [Angstroms] for the tip inr constant-current mode.')
+parser.add_argument(
+    '--replicate',
+    default=None,
+    nargs='+',
+    type=int, 
+    metavar='nx ny',
+    help='Number of replica along x and y.\
+          If just one number is specified, it is taken for both x and y.')
+parser.add_argument(
+    '--resample',
+    default=None,
+    nargs='+',
+    type=int, 
+    metavar='nx ny',
+    help='If specified, the data will be resampled on a cartesian grid of \
+          nx x ny points.')
+parser.add_argument(
+    '--format',
+    metavar='DESCRIPTION',
+    default='plain',
+    help='Specifies format of output file. Can be \'plain\' (matrix of numbers)\
+          or \'igor\' (igor text format of Igor Pro).'
+)
 parser.add_argument(
     '--noplot',
     dest='plot',
@@ -85,21 +77,6 @@ parser.add_argument(
     default=None,
     type=float,
     help='Range of color scale in plot')
-parser.add_argument(
-    '--replicate',
-    default=None,
-    nargs='+',
-    type=int, 
-    metavar='nx ny',
-    help='Number of replica along x and y.\
-          If just one number is specified, it is taken for both x and y.')
-parser.add_argument(
-    '--format',
-    metavar='DESCRIPTION',
-    default='plain',
-    help='Specifies format of output file. Can be \'plain\' (matrix of numbers)\
-          or \'igor\' (suitable for import into Igor Pro).'
-)
 
 args = parser.parse_args()
 
@@ -137,20 +114,27 @@ for fname in args.stmcubes:
          
         plane = None
         if kind == 'h':
-            plane, extent = c.get_plane_above_atoms(v, return_extent=True, 
-                              replica=args.replicate)
+            plane = c.get_plane_above_atoms(v, 
+                    return_object=True, 
+                    replica=args.replicate, resample=args.resample)
         elif kind == 'i':
             # todo: still to implement..
-            plane, extent = c.get_isosurface_above_atoms(v, zmin=args.zmin,
-                    return_extent=True, replica=args.replicate)
+            plane = c.get_isosurface_above_atoms(
+                    v, zmin=args.zmin,
+                    return_object=True, 
+                    replica=args.replicate, resample=args.resample)
+
+        # for details of plane object, see asetk/format/cube.py
+        data = plane.data
+        extent = plane.extent
 
         if args.format == 'plain':
-            planefile += '.dat'
-            print("Writing {} ".format(planefile))
-            np.savetxt(planefile, plane, header=header)
+            datafile = planefile + '.dat'
+            print("Writing {} ".format(datafile))
+            np.savetxt(datafile, data, header=header)
         elif args.format == 'igor':
             igorwave = igor.Wave2d(
-                    data=plane, 
+                    data=data.swapaxes(0,1), 
                     xmin=extent[0],
                     xmax=extent[1],
                     xlabel='x [Angstroms]',
@@ -158,14 +142,14 @@ for fname in args.stmcubes:
                     ymax=extent[3],
                     ylabel='y [Angstroms]',
             )
-            planefile += '.itx'
-            print("Writing {} ".format(planefile))
-            igorwave.write(planefile)
+            datafile = planefile + '.itx'
+            print("Writing {} ".format(datafile))
+            igorwave.write(datafile)
         else:
             print("Error: Unknown format {}.".format(args.format))
 
         if args.plot:
-            plotfile = planefile + str('.png')
+            plotfile = planefile + '.png'
             print("Plotting into {} ".format(plotfile))
             fig = plt.figure()
 
@@ -179,10 +163,8 @@ for fname in args.stmcubes:
             #    plane = plane - vmin
             #    vmin = 0
 
-            # replicate and resample
-            plane, extent = resample(plane, c, rep=args.replicate)
-
-            cax = plt.imshow(plane, extent=extent, 
+            # for some reason, I need to revert the x axis for imshow
+            cax = plt.imshow(data[::-1,:], extent=extent, 
                              cmap='gray', vmin=vmin, vmax=vmax)
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')
@@ -195,11 +177,3 @@ for fname in args.stmcubes:
                 cbar.set_label('z [$\AA$]')
 
             plt.savefig(plotfile, dpi=300)
-
-            resfile = planefile + str('.res')
-            print("Saving resampled data used for plotting to {} "\
-                    .format(resfile))
-            header += "\nDimensions after resampling: {:.3f} < x < {:.3f}, {:.3f} < y < {:.3f} [A]"\
-                    .format(extent[0], extent[1], extent[2], extent[3])
-            np.savetxt(resfile, plane, header=header)
-

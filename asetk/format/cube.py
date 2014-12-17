@@ -8,7 +8,7 @@ import numpy as np
 import copy  as cp
 import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as constants
-
+import matplotlib.mlab as mlab
 
 class Cube(object):
     """Stores data of a cube file.
@@ -255,7 +255,7 @@ class Cube(object):
                    .format(zplanereal - zmax))
         return iplane 
 
-    def get_plane_above_atoms(self, d, verbose=False, return_extent=None,
+    def get_plane_above_atoms(self, d, verbose=False, return_object=None,
             replica=None, resample=None):
         """Returns plane given by z=d above topmost atom
         
@@ -263,10 +263,11 @@ class Cube(object):
         """
 
         iplane =  self.get_index_above_atoms(d, verbose=verbose)
-        return self.get_plane('z', iplane, return_extent=return_extent,
+        return self.get_plane('z', iplane, return_object=return_object,
                               replica=replica, resample=resample)
 
-    def get_isosurface_above_atoms(self, v, zmin=0, on_grid=False):
+    def get_isosurface_above_atoms(self, v, zmin=0, on_grid=False,
+            return_object=None, replica=None, resample=None):
         """Returns z-values of isosurface
 
         Assumptions:
@@ -281,25 +282,27 @@ class Cube(object):
 
         plane = np.empty(self.shape[0:2])
         missed = 0
-        dZ = np.linalg.norm(self.dz)
-        nZ = self.shape[2]
 
-        for i in range(self.shape[0]):
-            for j in range(self.shape[1]):
+        pextent, pdx, pdy = self.get_plane_extent('z', return_vectors=True)
+        dz = np.linalg.norm(self.dz)
+        nz = self.nz
+
+        for i in range(self.nx):
+            for j in range(self.ny):
                 # argmax returns index of first occurence of maximum value
                 plane[i,j] = np.argmax(self.data[i,j,::-1] > v)
                 # correcting for reversing the direction
-                plane[i,j] = nZ - plane[i,j] - 1 
+                plane[i,j] = nz - plane[i,j] - 1 
 
-                if plane[i,j] == nZ -1 or plane[i,j] * dZ < zmin:
+                if plane[i,j] == nz -1 or plane[i,j] * dz < zmin:
                     plane[i,j] = zmin
                     missed = missed + 1
                 elif on_grid:
-                    plane[i,j] *= dZ
+                    plane[i,j] *= dz
                 else:
                     greater = self.data[i,j,plane[i,j]]
                     smaller = self.data[i,j,plane[i,j]+1]
-                    plane[i,j] = dZ * (plane[i,j] \
+                    plane[i,j] = dz * (plane[i,j] \
                                  + (greater - v)/(greater-smaller))
 
         ## 1st try, just iterating through the numpy array.
@@ -323,15 +326,30 @@ class Cube(object):
         #            plane[i,j] = zmin
         #            missed = missed + 1
 
-        print("{} isovalues replaced by zmin = {}".format(missed,zmin))
+        print("{} z-values replaced by zmin = {}".format(missed,zmin))
 
-        return plane
+        plane = Plane(data=plane, origin=self.origin, dx=pdx, dy=pdy)
 
-    def get_plane(self, dir, i, return_extent=None, replica=None, resample=None):
+        if replica:
+            plane.replicate(replica)
+
+        if resample:
+            plane.resample(resample)
+
+        if return_object:
+            # matplotlib will plot the 1st index along y
+            # and the 2nd index along x
+            #plane = plane.swapaxes(0,1)
+
+            return plane
+        else:
+            return plane.data
+
+    def get_plane(self, dir, i, return_object=False, replica=None, resample=None):
         """Returns plane normal to direction 'dir' at index 'i'
          
-        * return_extent
-            If True, returns [plane, extent], where extent=[x0, xmax, y0, ymax].
+        * return_object
+            If True, returns Plane object (which knows about its extent).
             Note: For plotting with matplotlib, you still need to
                   plane = plane.swapaxes(0,1)
         * replica
@@ -348,50 +366,67 @@ class Cube(object):
 
         if dir is 'x':
             plane = self.data[i, :, :]
-            dum, pdx, pdy = dvs
-            pextent = [o[1], o[1]+ls[1], o[2], o[2]+ls[2]]
         elif dir is 'y':
             plane = self.data[:, i, :]
-            pdy, dum, pdx = dvs
-            pextent = [o[2], o[2]+ls[2], o[0], o[0]+ls[0]]
         elif dir is 'z':
             plane = self.data[:, :, i]
-            dx, dy, dum = dvs
-            pextent = [o[0], o[0]+ls[0], o[1], o[1]+ls[1]]
         else:
             print("Cannot recognize direction '{}'".format(dir))
-            print("Direction must be 'x', 'y' or 'z'.")
+            print("Expected 'x', 'y' or 'z'.")
 
-        if resample:
-            line = plane.flatten()
-            pnx, pny = plane.shape
-            pos   = [ i*pdx+j*pdy for i in range(pnx) for j in range(pny) ]
-            x,y,z = zip(*pos)
-         
-            pextent = (np.min(x),np.max(x),np.min(y),np.max(y))
-            xnew = np.linspace(pextent[0], pextent[1], resample[0])
-            ynew = np.linspace(pextent[2], pextent[3], resample[1])
-         
-            # default interp='nn' needs mpl_toolkits.natgrid,
-            # which doesn't work on some machines
-            resampled = mlab.griddata(x, y, plane.flatten(), 
-                                      xnew, ynew, interp='linear')
-            # for some reason, I need to revert the x axis for imshow
-            plane = resampled[::-1,:]
+        pextent, pdx, pdy = self.get_plane_extent(dir, return_vectors=True)
+
+        plane = Plane(data=plane, origin=o, dx=pdx, dy=pdy)
+
 
         if replica:
-            plane = np.tile(plane, replica)
-            pextent[1] = (pextent[1] - pextent[0]) * replica[0]
-            pextent[3] = (pextent[3] - pextent[2]) * replica[1]
+            plane.replicate(replica)
 
-        if return_extent or replica or resample:
+        if resample:
+            plane.resample(resample)
+
+        if return_object:
             # matplotlib will plot the 1st index along y
             # and the 2nd index along x
             #plane = plane.swapaxes(0,1)
 
-            return [plane, pextent]
-        else:
             return plane
+        else:
+            return plane.data
+
+
+    def get_plane_extent(self, dir, return_vectors=False):
+        """Returns extent of plane.
+
+        Useful for plotting with matplotlib.
+
+         * return_vectors : If True, returns [pextent, pdx, pdy]
+             where pdx, pdy are the vectors of the plane grid.
+        """
+
+        dvs = self.atoms.cell / self.data.shape
+        ls = [ np.linalg.norm(v) for v in self.atoms.cell ]
+        o = self.origin
+
+        if dir is 'x':
+            dum, pdx, pdy = dvs
+            pextent = [o[1], o[1]+ls[1], o[2], o[2]+ls[2]]
+        elif dir is 'y':
+            pdy, dum, pdx = dvs
+            pextent = [o[2], o[2]+ls[2], o[0], o[0]+ls[0]]
+        elif dir is 'z':
+            pdx, pdy, dum = dvs
+            pextent = [o[0], o[0]+ls[0], o[1], o[1]+ls[1]]
+        else:
+            print("Cannot recognize direction '{}'".format(dir))
+            print("Expected 'x', 'y' or 'z'.")
+
+        if return_vectors:
+            return [pextent, pdx, pdy]
+        else:
+            return pextent
+        
+
 
     def set_plane(self, dir, i, plane):
         """Sets plane normal to direction 'dir' at index 'i' """
@@ -427,3 +462,80 @@ class Cube(object):
             print("Direction must be 'x', 'y' or 'z'.")
 
 
+class Plane(object):
+    """Stores a plane of a cube file.
+    
+    """
+
+    def __init__(self, data=None, origin=None, dx=None, dy=None, extent=None):
+        """Standard constructur, all parameters default to None."""
+        self.data = data
+        self.origin = origin
+
+        if extent != None and (dx != None or dy != None):
+            print("Error: Please specify either extent or dx, dy")
+        elif extent != None:
+            self.dx = [(extent[1]-extent[0])/self.nx, 0]
+            self.dy = [0, (extent[3]-extent[2])/self.ny]
+        else:
+            self.dx = dx
+            self.dy = dy
+
+    @property
+    def nx(self):
+        return self.data.shape[0]
+
+    @property
+    def ny(self):
+        return self.data.shape[1]
+
+    @property
+    def extent(self):
+        """Returns extent of plane.
+
+        Useful for plotting with matplotlib.
+        """
+        o = self.origin
+        dx = np.linalg.norm(self.dx)
+        dy = np.linalg.norm(self.dy)
+
+        extent = [ o[0], o[0]+dx*self.nx, o[1], o[1]+dy*self.ny ]
+
+        return extent
+
+
+    def replicate(self, replica):
+        self.data = np.tile(self.data, replica)
+        e = self.extent
+
+        self.extent[0] = (e[1] - e[0]) * replica[0]
+        self.extent[3] = (e[3] - e[2]) * replica[1]
+
+
+    def resample(self, npoints):
+
+        pdx = self.dx
+        pdy = self.dy
+        pnx = self.nx
+        pny = self.ny
+        o = self.origin
+
+        line = self.data.flatten()
+        pos   = [ o + i*pdx + j*pdy for i in range(pnx) for j in range(pny) ]
+        x,y,z = zip(*pos)
+     
+        extent = [np.min(x),np.max(x),np.min(y),np.max(y)]
+        xnew = np.linspace(extent[0], extent[1], npoints[0])
+        ynew = np.linspace(extent[2], extent[3], npoints[1])
+        self.dx = [(extent[1]-extent[0]) / npoints[0], 0]
+        self.dy = [0, (extent[2]-extent[3]) / npoints[1]]
+     
+        # default interp='nn' needs mpl_toolkits.natgrid,
+        # which doesn't work on some machines
+        resampled = mlab.griddata(x, y, line,
+                                  xnew, ynew, interp='linear')
+        # translating the output from mlab to floats
+        self.data = np.array(resampled, dtype=float)
+
+
+    
