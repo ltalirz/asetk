@@ -302,6 +302,7 @@ class Cube(object):
         if from_below:
             zmax = zcut
         else:
+            # the following is written for an "approach from below"
             self.data = self.data[:,:,::-1]
             zmax = nz*dz - zcut
 
@@ -327,22 +328,22 @@ class Cube(object):
             self.data = self.data[:,:,::-1]
             plane = dz*nz - plane
 
-                ##v2
-                ## argmax returns index of first occurence of maximum value
-                #plane[i,j] = np.argmax(self.data[i,j,::-1] > v)
-                ## correcting for reversing the direction
-                #plane[i,j] = nz - plane[i,j] - 1 
+            ##v2
+            ## argmax returns index of first occurence of maximum value
+            #plane[i,j] = np.argmax(self.data[i,j,::-1] > v)
+            ## correcting for reversing the direction
+            #plane[i,j] = nz - plane[i,j] - 1 
 
-                #if plane[i,j] == nz -1 or plane[i,j] * dz < zmin:
-                #    plane[i,j] = zmin
-                #    missed = missed + 1
-                #elif on_grid:
-                #    plane[i,j] *= dz
-                #else:
-                #    greater = self.data[i,j,plane[i,j]]
-                #    smaller = self.data[i,j,plane[i,j]+1]
-                #    plane[i,j] = dz * (plane[i,j] \
-                #                 + (greater - v)/(greater-smaller))
+            #if plane[i,j] == nz -1 or plane[i,j] * dz < zmin:
+            #    plane[i,j] = zmin
+            #    missed = missed + 1
+            #elif on_grid:
+            #    plane[i,j] *= dz
+            #else:
+            #    greater = self.data[i,j,plane[i,j]]
+            #    smaller = self.data[i,j,plane[i,j]+1]
+            #    plane[i,j] = dz * (plane[i,j] \
+            #                 + (greater - v)/(greater-smaller))
 
         ## 1st try, just iterating through the numpy array.
         ## Turns out this is more than 40x slower than the version above.
@@ -529,6 +530,25 @@ class Plane(object):
         return self.data.shape[1]
 
     @property
+    def imdata(self):
+        """Returns data in proper form for plotting with matplotlib
+        
+        The x-y plane of a cube file is a matrix of the form
+        
+        x1y1, x1y2, ...
+        x2y1, x2y2, ...
+        ...
+
+        For plotting with matplotlib, we want the form
+
+        ...
+        x1y2, x2y2, ...
+        x1y1, x2y1, ...
+
+        """
+        return  (self.data.swapaxes(0,1))[::-1,:]
+
+    @property
     def extent(self):
         """Returns extent of plane.
 
@@ -574,7 +594,10 @@ class Plane(object):
         resampled = mlab.griddata(x, y, line,
                                   xnew, ynew, interp='linear')
         # translating the output from mlab to floats
-        self.data = np.array(resampled, dtype=float)
+        resampled = np.array(resampled, dtype=float)
 
+        # in order to go back to the original data layout
+        # (1st index x, 2nd index y), we need to swap
+        self.data = resampled.swapaxes(0,1)
 
     

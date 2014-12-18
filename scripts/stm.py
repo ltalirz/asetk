@@ -45,7 +45,7 @@ parser.add_argument(
     '--zcut',
     metavar='HEIGHT',
     type=float,
-    default=0.0,
+    default=None,
     help='Minimum z-height [Angstroms] for the tip inr constant-current mode.')
 parser.add_argument(
     '--replicate',
@@ -131,6 +131,7 @@ for fname in args.stmcubes:
 
         # for details of plane object, see asetk/format/cube.py
         data = plane.data
+        imdata = plane.imdata
         extent = plane.extent
 
         if args.format == 'plain':
@@ -139,7 +140,7 @@ for fname in args.stmcubes:
             np.savetxt(datafile, data, header=header)
         elif args.format == 'igor':
             igorwave = igor.Wave2d(
-                    data=data.swapaxes(0,1), 
+                    data=data,
                     xmin=extent[0],
                     xmax=extent[1],
                     xlabel='x [Angstroms]',
@@ -168,9 +169,11 @@ for fname in args.stmcubes:
             #    plane = plane - vmin
             #    vmin = 0
 
+            # when approaching from below, let smaller z be brighter
+            cmap = 'Greys' if args.from_below else 'gray'
             # for some reason, I need to revert the x axis for imshow
-            cax = plt.imshow(data[::-1,:], extent=extent, 
-                             cmap='gray', vmin=vmin, vmax=vmax)
+            cax = plt.imshow(imdata, extent=extent, 
+                             cmap=cmap, vmin=vmin, vmax=vmax)
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')
 
