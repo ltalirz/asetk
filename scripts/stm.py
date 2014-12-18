@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import division
 import numpy as np
 import argparse
 import matplotlib as mpl
@@ -18,13 +19,13 @@ parser.add_argument('--version', action='version', version='%(prog)s 17.12.2014'
 parser.add_argument(
     '--stmcubes',
     nargs='+',
-    metavar='FILENAMES',
+    metavar='FILENAME',
     help='Cube files containing the local density of states (s-wave tip)\
           or the appropriate matrix elements (general case).')
 parser.add_argument(
     '--heights',
     nargs='+',
-    metavar='LIST',
+    metavar='HEIGHT',
     type=float,
     help='Tip-height above the topmost atom for an STM-image in constant-z\
           mode [Angstroms]. 3 Angstroms is typically reasonable.')
@@ -37,7 +38,7 @@ parser.add_argument(
 parser.add_argument(
     '--isovalues',
     nargs='+',
-    metavar='LIST',
+    metavar='VALUE',
     type=float,
     help='Values of the isosurface for an STM-image in constant current mode\
           [electrons/a0^3]. 1e-7 is typically a good start.')
@@ -50,22 +51,31 @@ parser.add_argument(
 parser.add_argument(
     '--replicate',
     default=None,
-    nargs='+',
+    nargs=2,
     type=int, 
-    metavar='nx ny',
+    metavar='INT',
     help='Number of replica along x and y.\
           If just one number is specified, it is taken for both x and y.')
 parser.add_argument(
+    '--stride',
+    default=None,
+    nargs=2,
+    type=float, 
+    metavar='INT',
+    help='If specified, the data will be resampled on a cartesian grid. \
+          --stride 0.5 0.5 will result in a grid twice as fine as the  \
+          original grid of the cube file.')
+parser.add_argument(
     '--resample',
     default=None,
-    nargs='+',
+    nargs=2,
     type=int, 
-    metavar='nx ny',
+    metavar='INT',
     help='If specified, the data will be resampled on a cartesian grid of \
           nx x ny points.')
 parser.add_argument(
     '--format',
-    metavar='DESCRIPTION',
+    metavar='STRING',
     default='plain',
     help='Specifies format of output file. Can be \'plain\' (matrix of numbers)\
           or \'igor\' (igor text format of Igor Pro).'
@@ -78,11 +88,12 @@ parser.add_argument(
     help='Suppress plotting of resulting isosurface using matplotlib.')
 parser.add_argument(
     '--plotrange',
-    nargs='+',
-    metavar='MIN MAX',
+    nargs=2,
+    metavar='VALUE',
     default=None,
     type=float,
-    help='Range of color scale in plot')
+    help='If specified, color scale in plot will range from 1st value \
+          to 2nd value.')
 
 args = parser.parse_args()
 
@@ -103,10 +114,21 @@ if args.replicate is not None:
         print('Invalid specification of replicas. \
                Please specify --replicate <nx> <ny>.')
 
+if args.stride is not None and args.resample is not None:
+    print("Error: Please specify either --stride or --resample")
+        
 # Iterate over supplied cube files
 for fname in args.stmcubes:
     print("\nReading {n} ".format(n=fname))
     c = cube.Cube.from_file(fname, read_data=True)
+
+    if args.stride:
+        s = args.stride
+        resample = [ int(round(c.nx/s[0])), 
+                     int(round(c.ny/s[1])) ]
+    else:
+        resample = args.resample
+    print(resample)
 
     for v,kind in jobs:
         planefile = None
@@ -122,12 +144,12 @@ for fname in args.stmcubes:
         if kind == 'h':
             plane = c.get_plane_above_atoms(v, 
                     return_object=True, from_below=args.from_below, 
-                    replica=args.replicate, resample=args.resample)
+                    replica=args.replicate, resample=resample)
         elif kind == 'i':
             plane = c.get_isosurface_above_atoms(
                     v, zcut=args.zcut, from_below=args.from_below,
                     return_object=True, 
-                    replica=args.replicate, resample=args.resample)
+                    replica=args.replicate, resample=resample)
 
         # for details of plane object, see asetk/format/cube.py
         data = plane.data
