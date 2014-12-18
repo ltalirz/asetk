@@ -237,47 +237,56 @@ class Cube(object):
 
         f.close()
 
-    def get_index_above_atoms(self, d, verbose=False):
+    def get_index_above_atoms(self, d, from_below=False, verbose=False):
         """Returns z-index of plane at z=d above topmost atom
         
         d must be given in Angstroms.
         """
 
-        zmax = np.max(self.atoms.positions[:,2])
-        zplane = zmax + d
-        dz = np.linalg.norm(self.dz)
+        if from_below:
+            zmin = np.min(self.atoms.positions[:,2])
+            zplane = zmmin - d
+        else:
+            zmax = np.max(self.atoms.positions[:,2])
+            zplane = zmax + d
 
+        dz = np.linalg.norm(self.dz)
         iplane = int(round(zplane / dz))
         zplanereal = iplane * dz
 
         if verbose:
-            print("Precise height above atoms: {} Angstroms" \
-                   .format(zplanereal - zmax))
+            if from_below:
+                delta = zmin - zplanereal
+            else:
+                delta = zplanereal - zmax
+            print("Precise height above atoms: {} Angstroms".format(delta))
+
         return iplane 
 
     def get_plane_above_atoms(self, d, verbose=False, return_object=None,
-            replica=None, resample=None):
+            replica=None, resample=None, from_below=False):
         """Returns plane given by z=d above topmost atom
         
         d should be given in Angstroms.
         """
 
-        iplane =  self.get_index_above_atoms(d, verbose=verbose)
+        iplane =  self.get_index_above_atoms(d, from_below, verbose=verbose)
         return self.get_plane('z', iplane, return_object=return_object,
                               replica=replica, resample=resample)
 
-    def get_isosurface_above_atoms(self, v, zmin=0, on_grid=False,
-            return_object=None, replica=None, resample=None):
+    def get_isosurface_above_atoms(self, v, from_below=False, zcut=None, 
+            on_grid=False, return_object=None, replica=None, resample=None):
         """Returns z-values of isosurface
 
         Assumptions:
-        - the tip approaches from above (i.e. along -z)
         - the values above the isosurface are smaller than below
-        - the tip cannot go below zmin
+        - the tip cannot go below zcut
         
         Parameters:
-        - zmin:    minimum z-value [Angstroms] that can be reached by the tip
-        - on_grid: if true, no interpolation between grid points is performed
+        - from_below: tip approaches from below instead of from above.
+        - zcut:       minimum z-value [Angstroms] that can be reached by the tip
+                      (maximum z-value for approach from below)
+        - on_grid:    if true, no interpolation between grid points is performed
         """
 
         plane = np.empty(self.shape[0:2])
@@ -287,23 +296,53 @@ class Cube(object):
         dz = np.linalg.norm(self.dz)
         nz = self.nz
 
+        if zcut is None:
+            zcut = dz*nz if from_below else 0.0
+
+        if from_below:
+            zmax = zcut
+        else:
+            self.data = self.data[:,:,::-1]
+            zmax = nz*dz - zcut
+
+        # this is written for an "approach from below"
         for i in range(self.nx):
             for j in range(self.ny):
                 # argmax returns index of first occurence of maximum value
-                plane[i,j] = np.argmax(self.data[i,j,::-1] > v)
-                # correcting for reversing the direction
-                plane[i,j] = nz - plane[i,j] - 1 
+                tmp = np.argmax(self.data[i,j,:] > v)
 
-                if plane[i,j] == nz -1 or plane[i,j] * dz < zmin:
-                    plane[i,j] = zmin
+                if tmp == 0 or tmp * dz > zmax:
+                    tmp = zmax
                     missed = missed + 1
                 elif on_grid:
-                    plane[i,j] *= dz
+                    tmp *= dz
                 else:
-                    greater = self.data[i,j,plane[i,j]]
-                    smaller = self.data[i,j,plane[i,j]+1]
-                    plane[i,j] = dz * (plane[i,j] \
-                                 + (greater - v)/(greater-smaller))
+                    greater = self.data[i,j,tmp]
+                    smaller = self.data[i,j,tmp-1]
+                    tmp = dz * (tmp + (greater - v)/(greater-smaller))
+                plane[i,j] = tmp
+
+        # revert back to original data set
+        if not from_below:
+            self.data = self.data[:,:,::-1]
+            plane = dz*nz - plane
+
+                ##v2
+                ## argmax returns index of first occurence of maximum value
+                #plane[i,j] = np.argmax(self.data[i,j,::-1] > v)
+                ## correcting for reversing the direction
+                #plane[i,j] = nz - plane[i,j] - 1 
+
+                #if plane[i,j] == nz -1 or plane[i,j] * dz < zmin:
+                #    plane[i,j] = zmin
+                #    missed = missed + 1
+                #elif on_grid:
+                #    plane[i,j] *= dz
+                #else:
+                #    greater = self.data[i,j,plane[i,j]]
+                #    smaller = self.data[i,j,plane[i,j]+1]
+                #    plane[i,j] = dz * (plane[i,j] \
+                #                 + (greater - v)/(greater-smaller))
 
         ## 1st try, just iterating through the numpy array.
         ## Turns out this is more than 40x slower than the version above.
@@ -326,7 +365,7 @@ class Cube(object):
         #            plane[i,j] = zmin
         #            missed = missed + 1
 
-        print("{} z-values replaced by zmin = {}".format(missed,zmin))
+        print("{} z-values replaced by zcut = {}".format(missed,zcut))
 
         plane = Plane(data=plane, origin=self.origin, dx=pdx, dy=pdy)
 

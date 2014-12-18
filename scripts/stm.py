@@ -29,6 +29,12 @@ parser.add_argument(
     help='Tip-height above the topmost atom for an STM-image in constant-z\
           mode [Angstroms]. 3 Angstroms is typically reasonable.')
 parser.add_argument(
+    '--from_below',
+    dest='from_below',
+    action='store_true',
+    default=False,
+    help='Approach sample from below instead from above.')
+parser.add_argument(
     '--isovalues',
     nargs='+',
     metavar='LIST',
@@ -36,7 +42,7 @@ parser.add_argument(
     help='Values of the isosurface for an STM-image in constant current mode\
           [electrons/a0^3]. 1e-7 is typically a good start.')
 parser.add_argument(
-    '--zmin',
+    '--zcut',
     metavar='HEIGHT',
     type=float,
     default=0.0,
@@ -110,17 +116,16 @@ for fname in args.stmcubes:
             header += ", z = {v} [A]".format(v=v)
         elif kind == 'i':
             planefile = "{f}.iso{d}".format(f=fname,d=v)
-            header += ", isovalue {v}, zmin {z} [A]".format(v=v, z=args.zmin)
+            header += ", isovalue {v}, zcut {z} [A]".format(v=v, z=args.zcut)
          
         plane = None
         if kind == 'h':
             plane = c.get_plane_above_atoms(v, 
-                    return_object=True, 
+                    return_object=True, from_below=args.from_below, 
                     replica=args.replicate, resample=args.resample)
         elif kind == 'i':
-            # todo: still to implement..
             plane = c.get_isosurface_above_atoms(
-                    v, zmin=args.zmin,
+                    v, zcut=args.zcut, from_below=args.from_below,
                     return_object=True, 
                     replica=args.replicate, resample=args.resample)
 

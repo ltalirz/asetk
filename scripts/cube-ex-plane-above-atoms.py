@@ -23,6 +23,12 @@ parser.add_argument(
     default=False,
     help='Whether to plot plane.')
 parser.add_argument(
+    '--vmax',
+    metavar='VALUE',
+    default=None,
+    type=float,
+    help='Set maximum value of color scale for plotting.')
+parser.add_argument(
     '--replicate',
     nargs='+',
     metavar='LIST',
@@ -51,7 +57,8 @@ if args.plot:
 
     fig = plt.figure()
 
-    cax = plt.imshow(plane.swapaxes(0,1), extent=extent, cmap='gray')
+    cax = plt.imshow(plane.swapaxes(0,1), extent=extent, cmap='gray',
+                      vmax=args.vmax)
     plt.xlabel('x [$\AA$]')
     plt.ylabel('y [$\AA$]')
 
@@ -63,4 +70,4 @@ if args.plot:
 
     outfile = '{f}.z{i}.png'.format(f=args.cube, i=args.height)
     print("Plotting into {}".format(outfile))
-    plt.savefig(outfile, dpi=200)
+    plt.savefig(outfile, dpi=200, bbox_inches='tight')
