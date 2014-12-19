@@ -321,9 +321,6 @@ class Cube(object):
                     smaller = self.data[i,j,itmp-1]
                     plane[i,j] = dz * (itmp - (greater - v)/(greater-smaller))
                     if not (v < greater and v > smaller):
-                        print( greater, v, smaller)
-                        print(greater - v)
-                        print(itmp, plane[i,j]/dz)
 
         # revert back to original data set
         if not from_below:

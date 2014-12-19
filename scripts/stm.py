@@ -128,7 +128,6 @@ for fname in args.stmcubes:
                      int(round(c.ny/s[1])) ]
     else:
         resample = args.resample
-    print(resample)
 
     for v,kind in jobs:
         planefile = None
