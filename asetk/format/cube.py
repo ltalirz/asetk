@@ -292,7 +292,6 @@ class Cube(object):
         plane = np.empty(self.shape[0:2])
         missed = 0
 
-        pextent, pdx, pdy = self.get_plane_extent('z', return_vectors=True)
         dz = np.linalg.norm(self.dz)
         nz = self.nz
 
@@ -310,18 +309,21 @@ class Cube(object):
         for i in range(self.nx):
             for j in range(self.ny):
                 # argmax returns index of first occurence of maximum value
-                tmp = np.argmax(self.data[i,j,:] > v)
+                itmp = np.argmax(self.data[i,j,:] > v)
 
-                if tmp == 0 or tmp * dz > zmax:
-                    tmp = zmax
+                if itmp == 0 or itmp * dz > zmax:
+                    plane[i,j] = zmax
                     missed = missed + 1
                 elif on_grid:
-                    tmp *= dz
+                    plane[i,j] = itmp * dz
                 else:
-                    greater = self.data[i,j,tmp]
-                    smaller = self.data[i,j,tmp-1]
-                    tmp = dz * (tmp + (greater - v)/(greater-smaller))
-                plane[i,j] = tmp
+                    greater = self.data[i,j,itmp]
+                    smaller = self.data[i,j,itmp-1]
+                    plane[i,j] = dz * (itmp - (greater - v)/(greater-smaller))
+                    if not (v < greater and v > smaller):
+                        print( greater, v, smaller)
+                        print(greater - v)
+                        print(itmp, plane[i,j]/dz)
 
         # revert back to original data set
         if not from_below:
@@ -367,6 +369,8 @@ class Cube(object):
         #            missed = missed + 1
 
         print("{} z-values replaced by zcut = {}".format(missed,zcut))
+
+        pextent, pdx, pdy = self.get_plane_extent('z', return_vectors=True)
 
         plane = Plane(data=plane, origin=self.origin, dx=pdx, dy=pdy)
 
