@@ -586,8 +586,10 @@ class Plane(object):
         extent = [np.min(x),np.max(x),np.min(y),np.max(y)]
         xnew = np.linspace(extent[0], extent[1], npoints[0])
         ynew = np.linspace(extent[2], extent[3], npoints[1])
-        self.dx = [(extent[1]-extent[0]) / npoints[0], 0]
-        self.dy = [0, (extent[2]-extent[3]) / npoints[1]]
+        dx = (extent[1]-extent[0]) / npoints[0]
+        dy = (extent[2]-extent[3]) / npoints[1]
+        self.dx = [dx, 0]
+        self.dy = [0, dy]
      
         # default interp='nn' needs mpl_toolkits.natgrid,
         # which doesn't work on some machines
