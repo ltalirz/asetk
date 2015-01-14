@@ -8,7 +8,7 @@ import numpy as np
 #import StringIO
 #import asetk.atomistic.fundamental as fu
 #import asetk.atomistic.constants as atc
-import cube
+from . import cube
 
 class Axis(object):
     """Represents an axis of an IGOR wave"""
