@@ -42,13 +42,13 @@ args = parser.parse_args()
 print("Reading cube file {}".format(args.cube))
 c = Cube.from_file(args.cube, read_data=True)
 
-plane, extent = c.get_plane_above_atoms(args.height, return_extent=True,
+plane = c.get_plane_above_atoms(args.height, return_object=True,
                                         replica=args.replicate)
 
 
 outfile = '{f}.z{i}.dat'.format(f=args.cube, i=args.height)
 print("Writing plane data to {}".format(outfile))
-np.savetxt(outfile, plane)
+np.savetxt(outfile, plane.data)
 
 if args.plot:
     import matplotlib as mpl
@@ -57,7 +57,7 @@ if args.plot:
 
     fig = plt.figure()
 
-    cax = plt.imshow(plane.swapaxes(0,1), extent=extent, cmap='gray',
+    cax = plt.imshow(plane.imdata, extent=plane.extent, cmap='gray',
                       vmax=args.vmax)
     plt.xlabel('x [$\AA$]')
     plt.ylabel('y [$\AA$]')

@@ -41,13 +41,13 @@ parser.add_argument(
     metavar='DISTANCE',
     default=+5.0,
     type=float,
-    help='Distance between extrapolation plane and outermost atom in a.u.')
+    help='Distance between extrapolation plane and outermost atom in Angstroms.')
 parser.add_argument(
     '--extent',
     metavar='DISTANCE',
     default=+15.0,
     type=float,
-    help='Extent of extrapolation in a.u.')
+    help='Extent of extrapolation in Angstroms.')
 
 args = parser.parse_args()
 a02A = constants.a0 / constants.Angstrom  # Bohr radius in Angstroms
@@ -77,7 +77,7 @@ if( os.path.isfile(hartree_planefile) ):
 else:
     hartree_cube = cube.Cube.from_file(args.hartree, read_data=True)
     hartree_plane = hartree_cube.get_plane_above_atoms( \
-            args.height*a02A, verbose=True)
+            args.height, verbose=True)
     np.savetxt(hartree_planefile, hartree_plane)
 
 hartree_avg = np.mean(hartree_plane) / eV2Ha
@@ -113,8 +113,9 @@ for fname in args.cubes:
     print("Spin {}, n = {}, E = {:.4f} eV"\
             .format(cube.spin, cube.wfn, cube.energy))
 
-    plane = cube.get_plane_above_atoms(args.height*a02A)
+    plane = cube.get_plane_above_atoms(args.height)
 
+    # Note: Working in Hartree atomic units here
     E = (cube.energy - hartree_avg) * eV2Ha * np.dot(cube.dz, cube.dz) / a02A**2
     dKX = 2*np.pi*np.linalg.norm(cube.dz) / np.linalg.norm(cube.cell[0])
     dKY = 2*np.pi*np.linalg.norm(cube.dz) / np.linalg.norm(cube.cell[1])
@@ -136,9 +137,10 @@ for fname in args.cubes:
             i_mod = i - (i//(nKX//2+1)) * nKX
             prefactors[i,j] = p(i_mod, j)
 
-    iz_start = cube.get_index_above_atoms(args.height*a02A)
-    iz_end = cube.get_index_above_atoms((args.height+args.extent)*a02A)
-    print("Extrapolation surface at z-index {}".format(iz_end+1))
+    iz_start = cube.get_index_above_atoms(args.height)
+    iz_end = cube.get_index_above_atoms(args.height+args.extent)
+    print("Extrapolation surface at z = {:.1f} Angstroms (plane index {})"\
+            .format(iz_start*cube.dz[2], iz_start+1))
     cube.resize([ cube.shape[0], cube.shape[1], iz_end + 1])
 
     for iz in range(iz_start+1, iz_end+1):
