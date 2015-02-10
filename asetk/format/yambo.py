@@ -73,6 +73,10 @@ class Dispersion:
     def __getitem__(self, index):
         return self.__energylevels[index]
 
+    @property
+    def nk(self):
+        return len(self.energylevels)
+
 
 class Spectrum(object):
 
@@ -83,21 +87,21 @@ class Spectrum(object):
         self.dispersions = [ Dispersion(energylevels) ]
 
     @classmethod
-    def from_output(cls, fname, mode=None):
+    def from_output(cls, fname, mode='QP'):
         """Creates Spectrum from Yambo output file"""
         tmp = Spectrum()
         tmp.read_from_output(fname, mode)
         return tmp
 
     @classmethod
-    def from_qp(cls, fname=None, mode=None):
+    def from_qp(cls, fname=None, mode='QP'):
         """Creates Spectrum from Yambo o.qp file"""
         tmp = Spectrum()
         tmp.read_from_qp(fname, mode)
         return tmp
 
     @classmethod
-    def from_netcdf_db(cls, fname=None, mode=None):
+    def from_netcdf_db(cls, fname=None, mode='QP'):
         """Creates Spectrum from Yambo netcdf database"""
         tmp = Spectrum()
         tmp.read_from_netcdf_db(fname, mode=mode)
@@ -127,6 +131,10 @@ class Spectrum(object):
         for disp in self.dispersions:
             os = os + disp.occupations
         return os
+
+    @property
+    def nspin(self):
+        return len(self.dispersions)
 
     def copy(self, spectrum):
         """Performs deep copy of spectrum."""
@@ -251,6 +259,8 @@ class Spectrum(object):
         QP_kpts =  f.variables['QP_kpts'][:]
         QP_table = f.variables['QP_table'][:]
         QP_E_Eo_Z =  f.variables['QP_E_Eo_Z'][:]
+
+        f.close()
 
         nk = QP_kpts.shape[1]
         nbnd = QP_table.shape[1] / nk
