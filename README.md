@@ -26,10 +26,14 @@ Installation requirements
 Installation instructions
 -------------------------
  
- Nothing to be done except letting your python distribution know
- where to find the asetk module.
+ 1. Let your python distribution know where to find the asetk module by adding 
+    the asetk base directory to the PYTHONPATH environment variable.
 
- This can be achieved e.g. by this line in your .bashrc
+    On Linux and MacOS simply add to your .bashrc something like
+    ``` export PYTHONPATH=$PYTHONPATH:/path/to/asetk  ```
+ 2. Let your system know where to find the scripts by adding the scripts/
+    directory to the PATH environment variable.
 
- export PYTHONPATH=$PYTHONPATH:/path/to/working/copy 
-
+    On Linux and MacOS simply add to your .bashrc something like
+    ``` export PATH=$PATH:/path/to/asetk/scripts  ```
+    
