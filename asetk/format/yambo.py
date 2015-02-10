@@ -255,16 +255,20 @@ class Spectrum(object):
 
         from netCDF4 import Dataset
         f = Dataset(fname, 'r')
-
+        SPIN_VARS = f.variables['SPIN_VARS'][:]
         QP_kpts =  f.variables['QP_kpts'][:]
         QP_table = f.variables['QP_table'][:]
         QP_E_Eo_Z =  f.variables['QP_E_Eo_Z'][:]
-
         f.close()
+        
+        nspin = len(SPIN_VARS)
 
         nk = QP_kpts.shape[1]
-        nbnd = QP_table.shape[1] / nk
-        nspin = QP_E_Eo_Z.shape[0]
+        kpts = [ QP_kpts[:,ik] for ik in range(nk) ]
+
+        ibnds, dum, iks, ispins = QP_table
+        nbnd = len(ibnds) / (nspin * nk)
+
         if mode == "QP":
             iener = 0
         elif mode == "DFT":
@@ -274,18 +278,22 @@ class Spectrum(object):
 
         self.spins=[]
         self.dispersions=[]
-
         for ispin in range(nspin):
+            is_spin = np.where(ispins == SPIN_VARS[ispin])[0]
 
             energylevels = []
             kvectors = []
             for ik in range(nk):
-                k = QP_kpts[:, ik]
-                e = QP_E_Eo_Z[0, ik*nbnd : (ik+1)*nbnd, iener] * atc.Ha / atc.eV
+                k = kpts[ik]
+
+                is_k = np.where(iks == ik+1)[0]
+                # still need to figure out the first index
+                # is it real vs. complex?
+                e = QP_E_Eo_Z[0, np.intersect1d(is_spin,is_k), iener] * atc.Ha / atc.eV
                 levels = fu.EnergyLevels(energies=e,occupations=None)
 
-                energylevels.append(levels)
                 kvectors.append(k)
+                energylevels.append(levels)
 
             disp = Dispersion(energylevels=energylevels, kvectors = kvectors)
 
