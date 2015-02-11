@@ -34,6 +34,11 @@ parser.add_argument(
     action='store_true',
     default=False,
     help='Save each band to file b<index>.dat')
+parser.add_argument(
+    '--pickle',
+    action='store_true',
+    default=False,
+    help='Save python spectrum object using pickle module.')
 
 args = parser.parse_args()
 
@@ -94,6 +99,11 @@ if args.save_bands:
         line = bands.T[i]
         fname = "{}_b{:03d}.dat".format(prefix, i+1)
         np.savetxt(fname,  zip(klist, line), header="k   E [eV]")
+
+if args.pickle:
+    import pickle
+    fname = prefix + '_spectrum.p'
+    pickle.dump(spectrum, open(fname, "wb"), protocol=2)
 
 #plt.show()
 

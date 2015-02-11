@@ -46,6 +46,21 @@ class Dispersion(object):
         for l in self.kpoints:
             l.shift(e)
 
+    @property
+    def nbnd(self):
+        nbnds = [len(k.levels) for k in self.kpoints]
+        nbnd = np.unique(nbnds)
+
+        if len( np.unique(nbnd) ) != 1:
+            print("Warning: k-points have different numer of bands {}"\
+                   .format(nbnd))
+        return nbnd[0]
+
+    @property
+    def nk(self):
+        return len(self.kpoints)
+
+
 
 class Spectrum(object):
     """A collection of dispersions, grouped by spin"""
@@ -95,6 +110,26 @@ class Spectrum(object):
             print("Using the mean {}".format(np.mean(fermis)))
 
         return np.mean(fermis)
+
+    @property
+    def nbnd(self):
+        nbnds = [d.nbnd for d in self.dispersions]
+        nbnd = np.unique(nbnds)
+
+        if len( np.unique(nbnd) ) != 1:
+            print("Warning: spins have different numer of bands {}"\
+                   .format(nbnd))
+        return nbnd[0]
+
+    @property
+    def nk(self):
+        nks = [d.nk for d in self.dispersions]
+        nk = np.unique(nks)
+
+        if len( np.unique(nk) ) != 1:
+            print("Warning: spins have different numer of k-points {}"\
+                   .format(nk))
+        return nk[0]
 
     def copy(self, spectrum):
         """Performs deep copy of spectrum."""
