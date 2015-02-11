@@ -131,6 +131,10 @@ class Spectrum(object):
                    .format(nk))
         return nk[0]
 
+    @property
+    def nspin(self):
+        return len(self.dispersions)
+
     def copy(self, spectrum):
         """Performs deep copy of spectrum."""
         self.dispersions = [ d.copy() for d in spectrum.dispersions ]

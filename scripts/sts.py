@@ -105,8 +105,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-# Prepare broadening functions for later convolution
-# quantile function quantile(y) = x is defined such that
+# Prepare broadening functions for later convolution.
+# The quantile function quantile(y) = x is defined such that
 # the integral of the probability density from -\infty to x equals y.
 if args.bmethod == 'Gaussian':
     sigma = args.FWHM / np.log(8 * np.sqrt(2))

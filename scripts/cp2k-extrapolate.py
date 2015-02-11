@@ -148,12 +148,11 @@ for fname in args.cubes:
         cube.set_plane('z', iz, np.fft.irfft2(fourier, plane.shape))
         #print(np.mean(np.abs(tmp)))
 
-    fname_out = 'extrapolated2.' + fname
+    fname_out = 'x.' + fname
     print("Writing {}".format(fname_out))
     cube.write_cube_file(fname_out)
 
 
-# Extrapolating cube files
 print("")
 print("Job done.")
     

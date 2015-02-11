@@ -90,13 +90,15 @@ class Wave1d(Wave):
 
         if axes is None:
             p=self.parameters
-            x = Axis(symbol='x', min=p['xmin'], max=p['xmax'], label=p['xlabel'])
+            x = Axis(symbol='x', min=p['xmin'], max=p['xmax'], unit=p['xlabel'])
             self.axes = [x]
 
     def print_data(self):
         s = ""
         for line in self.data:
             s += "{:12.6e}\n".format(float(line))
+
+        return s
          
 
 
