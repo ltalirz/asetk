@@ -8,6 +8,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import os
+import pickle
 
 
 # Define command line parser
@@ -35,6 +36,11 @@ parser.add_argument(
     metavar='FLOAT', 
     type=float,
     help='Will plot [Ef-window, Ef+window]')
+parser.add_argument(
+    '--pickle',
+    action='store_true',
+    default=False,
+    help='Save python spectrum object using pickle module.')
 
 args = parser.parse_args()
 filename = args.source
@@ -48,21 +54,18 @@ if not args.format:
     ext = os.path.splitext(args.source)[-1]
 
     if args.source == "eqp.dat":
-        args.format = 'qp'
-    elif ext == '.QP':
-        args.format = 'netcdf_db'
-    elif ext == '.out':
-        args.format = 'output'
+        args.format = 'eqp'
+    elif ext == '.log':
+        args.format = 'log'
     else:
-        print("Error: Please specify source forat using --format")
- 
-spectrum   = bgw.Spectrum.from_qp(filename, mode=args.mode)
-#if args.format == 'output' or args.format == 'qp':
-#    spectrum   = yambo.Spectrum.from_output(filename, mode=args.mode)
-#elif args.format == 'netcdf_db':
-#    spectrum   = yambo.Spectrum.from_netcdf_db(filename, mode=args.mode)
-#else:
-#    print("Error: Unrecognized format specification {}".format(args.format))
+        print("Error: Please specify source format using --format")
+
+if args.format == 'eqp':
+    spectrum   = bgw.Spectrum.from_eqp(filename, mode=args.mode)
+elif args.format == 'log':
+    spectrum   = bgw.Spectrum.from_log(filename, mode=args.mode)
+else:
+    print("Error: Unrecognized format specification {}".format(args.format))
 
 print(spectrum)
 
@@ -99,3 +102,11 @@ np.savetxt('bands.dat', data)
 pngname='bands.png'
 print("Saving band structure plot to {f}".format(f=pngname))
 plt.savefig(pngname, transparent=True, dpi=150)
+
+
+if args.pickle:
+    import pickle
+    fname = 'spectrum.p'
+    print("Saving pickled spectrum {}".format(fname))
+    pickle.dump(spectrum, open(fname, "wb"), protocol=2)
+
