@@ -108,5 +108,5 @@ if args.pickle:
     import pickle
     fname = 'spectrum.p'
     print("Saving pickled spectrum {}".format(fname))
-    pickle.dump(spectrum, open(fname, "wb"), protocol=2)
+    pickle.dump(spectrum, open(fname, "wb"), protocol=3)
 

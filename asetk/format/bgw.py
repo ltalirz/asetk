@@ -12,7 +12,7 @@ import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as atc
 from . import cube
 
-class Dispersion:
+class Dispersion(object):
     """A Dispersion holds the k-points belonging to one spin"""
 
     def __init__(self, energylevels=None, kvectors=None, weights=None):
@@ -78,22 +78,16 @@ class Spectrum(object):
 
     """A Spectrum holds the data belonging to all spins"""
 
-    def __init__(self, energylevels=None):
-        """Set up spectrum from a list of EnergyLevels."""
-        self.dispersions = [ Dispersion(energylevels) ]
+    def __init__(self, dispersions=None, spins=None):
+        """Set up spectrum from list of dispersions."""
+        self.dispersions = dispersions
+        self.spins = spins
 
     @classmethod
-    def from_output(cls, fname, mode=None):
-        """Creates Spectrum from Yambo output file"""
+    def from_eqp(cls, fname=None, mode=None):
+        """Creates Spectrum from eqp.dat file"""
         tmp = Spectrum()
-        tmp.read_from_output(fname, mode)
-        return tmp
-
-    @classmethod
-    def from_qp(cls, fname=None, mode=None):
-        """Creates Spectrum from Yambo o.qp file"""
-        tmp = Spectrum()
-        tmp.read_from_qp(fname, mode)
+        tmp.read_from_eqp(fname, mode)
         return tmp
 
     @classmethod
@@ -148,7 +142,7 @@ class Spectrum(object):
         return text
 
     def __getitem__(self, index):
-        return self.levels[index]
+        return self.dispersions[index]
 
     def read_from_eqp(self, fname="sigma_hp.log", ihomo=None):
         """Read from eqp.dat files generated with eqp.py script
