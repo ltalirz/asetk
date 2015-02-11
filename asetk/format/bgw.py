@@ -27,6 +27,11 @@ class Dispersion(object):
         return self.__energylevels
 
     @property
+    def kpoints(self):
+        """Returns energylevels of all k-points."""
+        return self.__energylevels
+
+    @property
     def kvectors(self):
         return self.__kvectors
 
@@ -47,6 +52,21 @@ class Dispersion(object):
         for el in self.__energylevels:
             os = os + list(el.occupations)
         return os
+
+    @property
+    def nbnd(self):
+        nbnds = [len(k.levels) for k in self.energylevels]
+        nbnd = np.unique(nbnds)
+
+        if len( np.unique(nbnd) ) != 1:
+            print("Warning: k-points have different numer of bands {}"\
+                   .format(nbnd))
+        return nbnd[0]
+
+    @property
+    def nk(self):
+        return len(self.energylevels)
+
 
     def copy(self, dispersion):
         """Performs deep copy of dispersion."""
@@ -123,6 +143,31 @@ class Spectrum(object):
         for disp in self.dispersions:
             os = os + disp.occupations
         return os
+
+    @property
+    def nbnd(self):
+        nbnds = [d.nbnd for d in self.dispersions]
+        nbnd = np.unique(nbnds)
+
+        if len( np.unique(nbnd) ) != 1:
+            print("Warning: spins have different numer of bands {}"\
+                   .format(nbnd))
+        return nbnd[0]
+
+    @property
+    def nk(self):
+        nks = [d.nk for d in self.dispersions]
+        nk = np.unique(nks)
+
+        if len( np.unique(nk) ) != 1:
+            print("Warning: spins have different numer of k-points {}"\
+                   .format(nk))
+        return nk[0]
+
+    @property
+    def nspin(self):
+        return len(self.dispersions)
+
 
     def copy(self, spectrum):
         """Performs deep copy of spectrum."""
