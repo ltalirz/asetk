@@ -122,14 +122,15 @@ class Spectrum(object):
         return nbnd[0]
 
     @property
-    def nk(self):
-        nks = [d.nk for d in self.dispersions]
-        nk = np.unique(nks)
+    def nkpt(self):
+        nkpts = [d.nkpt for d in self.dispersions]
+        nkpt = np.unique(nkpts)
 
-        if len( np.unique(nk) ) != 1:
+        if len( np.unique(nkpt) ) != 1:
             print("Warning: spins have different numer of k-points {}"\
-                   .format(nk))
-        return nk[0]
+                   .format(nkpt))
+        return nkpt[0]
+
 
     @property
     def nspin(self):

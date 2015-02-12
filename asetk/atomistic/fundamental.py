@@ -249,7 +249,7 @@ class KPoint(object):
 
     @property
     def nbnd(self):
-        return len(self.energylevels)
+        return len(self.energylevels.energies)
  
     def copy(self, kpt):
         """Performs deep copy."""
