@@ -227,6 +227,135 @@ class EnergyLevels(object):
 
         return np.array([E, DOS])
 
+
+class KPoint(object):
+    """Holds a k-point"""
+
+    def __init__(self, kvector=None, energylevels=None, weight=None):
+        self.kvector = kvector
+        self.energylevels = energylevels
+        self.weight = weight
+
+    def __iadd__(self, k):
+        """Merging two k-points
+ 
+        Used e.g. when merging k-points of different spins
+        """
+        if self.kvector != k.kvector:
+            print("Warning: Adding k-points with differing k-vectors {} and {}"\
+                  .format(self.kvector, k.kvector))
+        self.weight += k.weight
+        self.energylevels += k.energylevels 
+
+    @property
+    def nbnd(self):
+        return len(self.energylevels)
+ 
+    def copy(self, kpt):
+        """Performs deep copy."""
+        self.energylevels = kpt.energylevels.copy()
+        self.kvector = cp.copy(spectrum.kvector)
+        self.weight = cp.copy(spectrum.weight)
+
+    def __str__(self):
+        e = self.energylevels
+        k = self.kvector
+        text = 'k = ({:6.3f}, {:6.3f}, {:6.3f})'.format(k[0], k[1], k[2])
+
+        if self.weight:
+            w = self.weight
+            text += ', w = {}'.format(w)
+
+        text += ' : {}\n'.format(e.__str__())
+
+        return text
+
+
+class Dispersion(object):
+    """Holds a collection of k-points"""
+
+    def __init__(self, kpoints=None, kvectors=None):
+         if kpoints is None:
+             self.kpoints = []
+         else:
+             self.kpoints = kpoints
+
+    @property
+    def energylevels(self):
+        s = fu.EnergyLevels()
+        for kpt in self.kpoints:
+            s += kpt.energylevels
+        return s
+
+    @property
+    def energies(self):
+        e = Energylevels(self.energylevels)
+        return e.energies
+
+    @property
+    def kvectors(self):
+        s = [] 
+        for kpt in self.kpoints:
+            s += kpt.kvector
+        return s
+
+    @property
+    def weights(self):
+        s = [] 
+        for kpt in self.kpoints:
+            s.append(kpt.weights)
+        return s
+
+    def merge_kpoints(self):
+        kv = [0,0,0]
+        levels = Energylevels([k.energylevels for k in self.kpoints])
+        weight = 1.0
+        self.kpoints = [KPoint(kv,levels,weight)]
+
+    def __iadd__(self, s):
+        """Merging two dispersions
+
+        Used e.g. when merging dispersions belonging to different spins.
+        """
+        if len(self.kpoints) != len(s.kpoints):
+            print("Unable to merge due to different number of kpoints")
+        for i in range(len(self.kpoints)):
+            self.kpoints[i] += s.kpoints[i]
+        return self
+
+    def shift(self, e):
+        """Shift energylevels by energy e"""
+        for k in self.kpoints:
+            k.energylevels.shift(e)
+
+    @property
+    def nbnd(self):
+        nbnds = [k.nbnd for k in self.kpoints]
+        nbnd = np.unique(nbnds)
+
+        if len( np.unique(nbnd) ) != 1:
+            print("Warning: k-points have different numer of bands {}"\
+                   .format(nbnd))
+        return nbnd[0]
+
+    @property
+    def nkpt(self):
+        return len(self.kpoints)
+
+
+    def copy(self, dispersion):
+        """Performs deep copy."""
+        self.kpoints = [k.copy() for k in dispersion.kpoints]
+
+    def __str__(self):
+        text  = "Dispersion containing {} k-points\n".format(len(self.__energylevels))
+        for kpt in self.kpoints:
+            text += kpt.__str__()
+        return text
+
+    def __getitem__(self, index):
+        return self.kpoints[index]
+
 #class Atom(object):
 #
 #    """Represents a single atom.

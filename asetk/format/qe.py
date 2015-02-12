@@ -11,54 +11,54 @@ import numpy as np
 import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as atc
 
-class Dispersion(object):
-    """Holds k-points belonging to one spin"""
-    def __init__(self, kpoints=None, kvectors=None):
-        if kpoints is None:
-            self.kpoints = []
-            self.kvectors = []
-        else:
-            self.kpoints = kpoints
-            self.kvectors = kvectors
-
-    def addkpoint(self, kpoint, kvector):
-        self.kpoints.append(kpoint)
-        self.kvectors.append(kvector)
-
-    def energylevels(self):
-        s = fu.EnergyLevels()
-        for l in self.kpoints:
-            s += l
-        return s
-
-    def mergekpoints(self):
-        self.kpoints = energylevels(self.kpoints)
-
-    def __iadd__(self, s):
-        """Merging two spins"""
-        if len(self.kpoints) != len(s.kpoints):
-            print("Unable to merge due to different number of kpoints")
-        for i in range(len(self.kpoints)):
-            self.kpoints[i] += s.kpoints[i]
-        return self
-
-    def shift(self, e):
-        for l in self.kpoints:
-            l.shift(e)
-
-    @property
-    def nbnd(self):
-        nbnds = [len(k.levels) for k in self.kpoints]
-        nbnd = np.unique(nbnds)
-
-        if len( np.unique(nbnd) ) != 1:
-            print("Warning: k-points have different numer of bands {}"\
-                   .format(nbnd))
-        return nbnd[0]
-
-    @property
-    def nk(self):
-        return len(self.kpoints)
+#class Dispersion(object):
+#    """Holds k-points belonging to one spin"""
+#    def __init__(self, kpoints=None, kvectors=None):
+#        if kpoints is None:
+#            self.kpoints = []
+#            self.kvectors = []
+#        else:
+#            self.kpoints = kpoints
+#            self.kvectors = kvectors
+#
+#    def addkpoint(self, kpoint, kvector):
+#        self.kpoints.append(kpoint)
+#        self.kvectors.append(kvector)
+#
+#    def energylevels(self):
+#        s = fu.EnergyLevels()
+#        for l in self.kpoints:
+#            s += l
+#        return s
+#
+#    def mergekpoints(self):
+#        self.kpoints = energylevels(self.kpoints)
+#
+#    def __iadd__(self, s):
+#        """Merging two spins"""
+#        if len(self.kpoints) != len(s.kpoints):
+#            print("Unable to merge due to different number of kpoints")
+#        for i in range(len(self.kpoints)):
+#            self.kpoints[i] += s.kpoints[i]
+#        return self
+#
+#    def shift(self, e):
+#        for l in self.kpoints:
+#            l.shift(e)
+#
+#    @property
+#    def nbnd(self):
+#        nbnds = [len(k.levels) for k in self.kpoints]
+#        nbnd = np.unique(nbnds)
+#
+#        if len( np.unique(nbnd) ) != 1:
+#            print("Warning: k-points have different numer of bands {}"\
+#                   .format(nbnd))
+#        return nbnd[0]
+#
+#    @property
+#    def nk(self):
+#        return len(self.kpoints)
 
 
 
@@ -190,7 +190,7 @@ class Spectrum(object):
 
         self.dispersions = []
         for spin in range(1, nspin+1):
-            dispersion = Dispersion()
+            dispersion = fu.Dispersion()
 
             for kpt in kptdatas:
                 kindex = int(kpt[0])
