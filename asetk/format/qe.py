@@ -226,9 +226,11 @@ class Spectrum(object):
                 levels = np.array(re.findall(levelregex, eigstring), dtype = float)
                 levels *= atc.Ha / atc.eV
 
-                dispersion.addkpoint( 
-                        fu.EnergyLevels(energies=levels, fermi=fermi), 
-                        kvec)
+                kpt = fu.KPoint(
+                        energylevels=fu.EnergyLevels(energies=levels, fermi=fermi),
+                        kvector=kvec
+                        )
+                dispersion.kpoints.append(kpt)
 
                 os.chdir('..')
 

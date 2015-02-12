@@ -52,18 +52,20 @@ k    = None
 klist = []
 
 
-for i in range(len(dispersion.kpoints)):
+for i in range(dispersion.nkpt):
     kpt = dispersion.kpoints[i]
-    E = kpt.energies
-    fermi = kpt.fermi
+    lev = kpt.energylevels
+
+    E = lev.energies
+    fermi = lev.fermi
     print(fermi)
 
 
     #k = np.array([ dispersion.kvectors[i][0] for l_ in range(len(E))])
     #k = [ kp if kp >= 0 else kp+1 for kp in k]
     # QE likes to place kpoints at -0.5 instead of +0.5
-    if dispersion.kvectors[i][0] < 0:
-        dispersion.kvectors[i][0] = dispersion.kvectors[i][0] + 1.0
+    if kpt.kvector[0] < 0:
+        kpt.kvector[0] += 1.0
 
     if k is None:
         k = [0 for l_ in range(len(E))]
@@ -84,7 +86,7 @@ for i in range(len(dispersion.kpoints)):
     plt.xlabel(r'k [$\frac{2\pi}{a}$]')
     plt.ylabel('E [eV]')
 
-    datablock = [ np.concatenate( (dispersion.kvectors[i], [e]) ) for e in E]
+    datablock = [ np.concatenate( (kpt.kvector, [e]) ) for e in E]
     if data is not None:
         data = np.concatenate( (data, datablock), axis=0 )
     else:

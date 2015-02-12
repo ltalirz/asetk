@@ -232,7 +232,7 @@ class KPoint(object):
     """Holds a k-point"""
 
     def __init__(self, kvector=None, energylevels=None, weight=None):
-        self.kvector = kvector
+        self.kvector = np.array(kvector)
         self.energylevels = energylevels
         self.weight = weight
 
@@ -296,7 +296,7 @@ class Dispersion(object):
     def kvectors(self):
         s = [] 
         for kpt in self.kpoints:
-            s += kpt.kvector
+            s.append(kpt.kvector)
         return s
 
     @property
