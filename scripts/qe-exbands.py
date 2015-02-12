@@ -58,14 +58,15 @@ for i in range(dispersion.nkpt):
 
     E = lev.energies
     fermi = lev.fermi
-    print(fermi)
+    print("Fermi {:.3f} eV".format(fermi))
 
 
     #k = np.array([ dispersion.kvectors[i][0] for l_ in range(len(E))])
     #k = [ kp if kp >= 0 else kp+1 for kp in k]
     # QE likes to place kpoints at -0.5 instead of +0.5
-    if kpt.kvector[0] < 0:
-        kpt.kvector[0] += 1.0
+    for j in [0,1,2]:
+        if kpt.kvector[j] < 0:
+            kpt.kvector[j] *= -1.0
 
     if k is None:
         k = [0 for l_ in range(len(E))]

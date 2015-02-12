@@ -71,11 +71,11 @@ print(spectrum)
 
 data = None
 for spin, dispersion in zip(spectrum.spins, spectrum.dispersions):
-    for i in range(len(dispersion.energylevels)):
-        E = dispersion.energylevels[i].energies
-        fermi = dispersion.energylevels[i].fermi
+    for kpt in dispersion.kpoints:
+        E = kpt.energylevels.energies
+        fermi = kpt.energylevels.fermi
 
-        k = np.array([ dispersion.kvectors[i][2] for l_ in range(len(E))])
+        k = np.array([ kpt.kvector[2] for l_ in range(len(E))])
         # QE likes to place kpoints at -0.5 instead of +0.5
         #k = [ kp if kp >= 0 else kp+1 for kp in k]
 

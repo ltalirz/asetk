@@ -247,14 +247,13 @@ class Spectrum(object):
         kmatches = re.findall(kregex, string, re.DOTALL)
 
 
-        energylevels = [[] for s in self.spins]
-        kvectors = [[] for s in self.spins]
+        kpoints = [[] for s in self.spins]
         for kmatch in kmatches:
             lines = kmatch.splitlines()
 
             dum, dum, kx, ky, kz, dum, dum, ik, dum, dum, ispin = lines[0].split()
             ispin = int(ispin)-1
-            kvectors[ispin].append( np.array([kx, ky, kz], dtype=float) )
+            kvector = np.array([kx, ky, kz], dtype=float)
 
             energies = []
             for line in lines[3:3+nbnd]:
@@ -262,11 +261,13 @@ class Spectrum(object):
                 energies.append(float(eqp1))
 
             levels = fu.EnergyLevels(energies=np.array(energies, dtype=float))
-            energylevels[ispin].append(levels)
+
+            kpt = fu.KPoint(kvector=kvector, energylevels=levels)
+            kpoints[ispin].append(kpt)
                      
         self.dispersions=[]
-        for e,k in zip(energylevels, kvectors):
-            disp = fu.Dispersion(energylevels=e, kvectors=k)
+        for k in kpoints:
+            disp = fu.Dispersion(kpoints=k)
             self.dispersions.append(disp)
 
 

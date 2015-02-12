@@ -274,7 +274,7 @@ class KPoint(object):
 class Dispersion(object):
     """Holds a collection of k-points"""
 
-    def __init__(self, kpoints=None, kvectors=None):
+    def __init__(self, kpoints=None):
          if kpoints is None:
              self.kpoints = []
          else:
@@ -282,7 +282,7 @@ class Dispersion(object):
 
     @property
     def energylevels(self):
-        s = fu.EnergyLevels()
+        s = EnergyLevels()
         for kpt in self.kpoints:
             s += kpt.energylevels
         return s
@@ -348,7 +348,7 @@ class Dispersion(object):
         self.kpoints = [k.copy() for k in dispersion.kpoints]
 
     def __str__(self):
-        text  = "Dispersion containing {} k-points\n".format(len(self.__energylevels))
+        text  = "Dispersion containing {} k-points\n".format(self.nkpt)
         for kpt in self.kpoints:
             text += kpt.__str__()
         return text
