@@ -1,0 +1,10 @@
+# #!/bin/bash
+ 
+# your local cp2k executable
+cp2k_binary="/usr/local/cp2k/exe/macbook/cp2k.popt"
+# this directory should contain BASIS_MOLOPT and GTH_POTENTIALS
+cp2k_pseudo_dir="./"
+
+# your mpi prefix
+# leave empty when running serial version
+para_prefix="mpirun-mpich-mp -np 4"
