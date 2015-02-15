@@ -501,6 +501,14 @@ class Cube(object):
             print("Cannot recognize direction '{}'".format(dir))
             print("Direction must be 'x', 'y' or 'z'.")
 
+    def __iadd__(self, c):
+        """Adds grid values of two cube files together"""
+        if self.data.shape != c.data.shape:
+            raise ValueError("Shape of cube files do not agree")
+        self.data += c.data
+
+        return self
+
 
 class Plane(object):
     """Stores a plane of a cube file.

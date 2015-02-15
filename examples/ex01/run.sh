@@ -13,8 +13,8 @@ cat > scf.inp <<EOF
 &FORCE_EVAL
   METHOD Quickstep
   &DFT
-    BASIS_SET_FILE_NAME ${cp2k_pseudo_dir}/BASIS_MOLOPT
-    POTENTIAL_FILE_NAME ${cp2k_pseudo_dir}/GTH_POTENTIALS
+    BASIS_SET_FILE_NAME ${cp2k_libdir}/BASIS_MOLOPT
+    POTENTIAL_FILE_NAME ${cp2k_libdir}/GTH_POTENTIALS
     &PRINT
       &E_DENSITY_CUBE
       &END E_DENSITY_CUBE
@@ -27,7 +27,7 @@ cat > scf.inp <<EOF
       &END
     &END
     &MGRID
-      CUTOFF 350
+      CUTOFF 300
     &END
     &SCF
       EPS_SCF 1.0E-7
@@ -78,5 +78,18 @@ echo "${cp2k_binary} < scf.inp | tee scf.out"
 ${para_prefix} ${cp2k_binary} -i scf.inp | tee scf.out
 
 ### Extrapolating cube files ###
+echo "### Extrapolating cube filesn ###"
+echo "${cp2k_binary} < scf.inp | tee scf.out"
+#${para_prefix} ${cp2k_binary} -i scf.inp | tee scf.out
+
+cp2k-extrapolate.py \
+  --hartree ANTHRACENE-v_hartree-1_0.cube \
+  --levelsfile scf.out \
+  --height 2.5 \
+  --extent 10 \
+  *WFN*cube
+
+### Performing STM simulation ###
+echo "### Performing STM simulation ###"
 
 
