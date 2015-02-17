@@ -12,87 +12,6 @@ import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as atc
 from . import cube
 
-#class Dispersion(object):
-#    """A Dispersion holds the k-points belonging to one spin"""
-#
-#    def __init__(self, energylevels=None, kvectors=None, weights=None):
-#        """Set up spectrum from a list of EnergyLevels."""
-#        self.__energylevels = energylevels
-#        self.__kvectors = kvectors
-#        self.__weights = weights
-#
-#    @property
-#    def energylevels(self):
-#        """Returns energylevelsi of all k-points."""
-#        return self.__energylevels
-#
-#    @property
-#    def kpoints(self):
-#        """Returns energylevels of all k-points."""
-#        return self.__energylevels
-#
-#    @property
-#    def kvectors(self):
-#        return self.__kvectors
-#
-#    @property
-#    def weights(self):
-#        return self.__weights
-#
-#    @property
-#    def energies(self):
-#        """Returns list of energy levels of all k-points."""
-#        list = [el.energies for el in self.__energylevels]
-#        return np.concatenate(list)
-#
-#    @property
-#    def occupations(self):
-#        """Returns list of level occupations of all k-points."""
-#        os = []
-#        for el in self.__energylevels:
-#            os = os + list(el.occupations)
-#        return os
-#
-#    @property
-#    def nbnd(self):
-#        nbnds = [len(k.levels) for k in self.energylevels]
-#        nbnd = np.unique(nbnds)
-#
-#        if len( np.unique(nbnd) ) != 1:
-#            print("Warning: k-points have different numer of bands {}"\
-#                   .format(nbnd))
-#        return nbnd[0]
-#
-#    @property
-#    def nk(self):
-#        return len(self.energylevels)
-#
-#
-#    def copy(self, dispersion):
-#        """Performs deep copy of dispersion."""
-#        self.__energylevels = [ el.copy() for el in dispersion.__energylevels ]
-#        self.__kvectors = cp.copy(spectrum.__kvectors)
-#        self.__weights = cp.copy(spectrum.__weights)
-#
-#    def shift(self, de):
-#        for levels in self.__energylevels:
-#            levels.shift(de)
-#
-#    def __str__(self):
-#        text  = "Dispersion containing {} k-points\n".format(len(self.__energylevels))
-#        for i in range(len(self.__energylevels)):
-#            e = self.__energylevels[i]
-#            k = self.__kvectors[i]
-#            text += 'k = ({:6.3f}, {:6.3f}, {:6.3f})'.format(k[0], k[1], k[2])
-#            if self.__weights:
-#                w = self.__weights[i]
-#                text += ', w = {}'.format(w)
-#            text += ' : {}\n'.format(e.__str__())
-#        return text
-#
-#    def __getitem__(self, index):
-#        return self.__energylevels[index]
-
 
 class Spectrum(object):
 
@@ -246,6 +165,13 @@ class Spectrum(object):
         kregex = '  k \=.*?(?=\n{3}|   k \=)'
         kmatches = re.findall(kregex, string, re.DOTALL)
 
+        if mode == 'QP' or mode == None:
+            if re.search("ch'",kmatches[0]) is not None:
+                calc_mode = 'static_remainder'
+            else:
+                calc_mode = 'partial_sum'
+        else:
+            raise ValueError("Unknown mode {}".format(mode))
 
         kpoints = [[] for s in self.spins]
         for kmatch in kmatches:
@@ -257,7 +183,12 @@ class Spectrum(object):
 
             energies = []
             for line in lines[3:3+nbnd]:
-                n, elda, ecor, x, sx_x, ch ,sig, vxc, eqp0, eqp1, Znk = line.split()
+                if calc_mode == 'static_remainder':
+                    n, elda, ecor, x, sx_x, ch ,sig, vxc, eqp0, eqp1, \
+                        ch_p, sig_p, eqp0_p, eqp1_p, Znk = line.split()
+                else:
+                    n, elda, ecor, x, sx_x, ch ,sig, vxc, eqp0, eqp1,\
+                        Znk = line.split()
                 energies.append(float(eqp1))
 
             levels = fu.EnergyLevels(energies=np.array(energies, dtype=float))
