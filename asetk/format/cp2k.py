@@ -205,9 +205,7 @@ class Spectrum(object):
 
         # Format in CP2K output
         if not re.search('Eigenvalues of the occupied subspace', s):
-            print("Error: Unable to parse CP2K output file")
-            return
-
+            raise ValueError("Unable to parse CP2K output file")
 
         # We are interested only in the last run (result of calculation)
         rundatas = re.findall(

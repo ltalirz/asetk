@@ -1,0 +1,10 @@
+# #!/bin/bash
+ 
+# your local cp2k executable
+cp2k_binary="cp2k.popt"
+# this directory should contain BASIS_MOLOPT and GTH_POTENTIALS
+cp2k_libdir="$CP2K_LIBDIR"
+
+# your mpi prefix
+# leave empty when running serial version
+para_prefix="mpiexec -np 4"
