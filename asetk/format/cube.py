@@ -73,28 +73,24 @@ class Cube(object):
 
     @property
     def shape(self):
-        return self.data.shape
+        if self.data is not None:
+            return self.data.shape
+        elif self.shape_ is not None:
+            return self.shape_
+        else:
+            return None
  
     @property
     def nx(self):
-        if self.data is None:
-            return self.shape_[0]
-        else:
-            return self.shape[0]
+        return self.shape[0]
 
     @property
     def ny(self):
-        if self.data is None:
-            return self.shape_[1]
-        else:
-            return self.shape[1]
+        return self.shape[1]
 
     @property
     def nz(self):
-        if self.data is None:
-            return self.shape_[2]
-        else:
-            return self.shape[2]
+        return self.shape[2]
 
     @property
     def dx(self):
@@ -400,19 +396,22 @@ class Cube(object):
 
         """
 
-        dvs = self.atoms.cell / self.data.shape
+        shape = self.data.shape
+        dvs = self.atoms.cell / shape
         ls = [ np.linalg.norm(v) for v in self.atoms.cell ]
         o = self.origin
 
-        if dir is 'x':
+        if dir is 'x' and i < shape[0]:
             plane = self.data[i, :, :]
-        elif dir is 'y':
+        elif dir is 'y' and i < shape[1]:
             plane = self.data[:, i, :]
-        elif dir is 'z':
+        elif dir is 'z' and i < shape[2]:
             plane = self.data[:, :, i]
         else:
-            print("Cannot recognize direction '{}'".format(dir))
-            print("Expected 'x', 'y' or 'z'.")
+            msg  = "Direction {} not recognized or index {} out of bounds"\
+                    .format(dir,i)
+            msg += "\nDirection must be 'x', 'y' or 'z'."
+            raise ValueError(msg)
 
         pextent, pdx, pdy = self.get_plane_extent(dir, return_vectors=True)
 

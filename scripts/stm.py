@@ -47,7 +47,7 @@ parser.add_argument(
     metavar='HEIGHT',
     type=float,
     default=None,
-    help='Minimum z-height [Angstroms] for the tip inr constant-current mode.')
+    help='Minimum z-height [Angstroms] for the tip in constant-current mode.')
 parser.add_argument(
     '--replicate',
     default=None,
@@ -81,11 +81,11 @@ parser.add_argument(
           or \'igor\' (igor text format of Igor Pro).'
 )
 parser.add_argument(
-    '--noplot',
+    '--plot',
     dest='plot',
-    action='store_false',
-    default=True,
-    help='Suppress plotting of resulting isosurface using matplotlib.')
+    action='store_true',
+    default=False,
+    help='Plot STM image using matplotlib.')
 parser.add_argument(
     '--plotrange',
     nargs=2,
