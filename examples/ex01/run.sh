@@ -21,8 +21,8 @@ cat > scf.inp <<EOF
       &V_HARTREE_CUBE
       &END V_HARTREE_CUBE
       &MO_CUBES
-        NHOMO 4
-        NLUMO 4
+        NHOMO 5
+        NLUMO 5
         WRITE_CUBE T
       &END
     &END
@@ -32,14 +32,6 @@ cat > scf.inp <<EOF
     &SCF
       EPS_SCF 1.0E-7
       &PRINT
-        &RESTART
-          &EACH
-            QS_SCF 0
-            GEO_OPT 1
-          &END
-          ADD_LAST NUMERIC
-          FILENAME RESTART
-        &END
         &RESTART_HISTORY OFF
         &END
       &END PRINT
@@ -51,7 +43,7 @@ cat > scf.inp <<EOF
   &END DFT
   &SUBSYS
     &CELL
-      ABC [angstrom] 15 20 10
+      ABC [angstrom] 15 20 15
     &END
     &TOPOLOGY
      COORD_FILE_NAME ./anthracene.xyz
@@ -67,9 +59,6 @@ cat > scf.inp <<EOF
     &END KIND
   &END SUBSYS
 &END FORCE_EVAL
-#&EXT_RESTART
-# RESTART_FILE_NAME PROJ-1.restart
-#&END
 EOF
 
 echo "### Running CP2K calculation ###"
@@ -80,14 +69,16 @@ echo "### Summing cube files ###"
 cp2k-sumbias.py \
   --cubes ANTHRACENE-WFN*cube \
   --levelsfile scf.out \
-  --vmin -2.0 --vmax -1.0 --vstep 0.50
+  --vmin -3.0 --vmax 1.0 --vstep 1.0 \
+  | tee sumbias.out
 
 echo "### Performing STM simulation ###"
 stm.py \
   --stmcubes stm_*.cube \
   --heights 6.0 \
   --format 'plain' \
-  --plot
+  --plot \
+  | tee stm.out
 
 
 echo "### Extrapolating wave functions ###"
@@ -96,7 +87,8 @@ cp2k-extrapolate.py \
   --levelsfile scf.out \
   --height 2.5 \
   --extent 10 \
-  ANTHRACENE*WFN*cube
+  ANTHRACENE*WFN*cube \
+  | tee extrapolate.out
 
 mkdir -p extrapolated
 mv x.*cube extrapolated/
@@ -106,14 +98,16 @@ echo "### Summing cube files ###"
 cp2k-sumbias.py \
   --cubes x.ANTHRACENE-WFN*cube \
   --levelsfile ../scf.out \
-  --vmin -2.0 --vmax -1.0 --vstep 0.50
+  --vmin -3.0 --vmax 1.0 --vstep 1.0 \
+  | tee sumbias.out
 
 echo "### Performing STM simulation ###"
 stm.py \
   --stmcubes stm_*.cube \
   --heights 6.0 \
   --format 'plain' \
-  --plot
+  --plot \
+  | tee stm.out
 
 cd ..
 
