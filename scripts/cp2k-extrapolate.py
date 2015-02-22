@@ -41,10 +41,10 @@ parser.add_argument(
     metavar='DISTANCE',
     default=+2.5,
     type=float,
-    help='Distance between extrapolation plane and outermost atom in Angstroms.
-          The closer to the surface, the better the representation of the wave
-          function, but the stronger the deviation of value of the Hartree 
-          potential from the vacuum level.
+    help='Distance between extrapolation plane and outermost atom in Angstroms.\
+          The closer to the surface, the better the representation of the wave\
+          function, but the stronger the deviation of value of the Hartree \
+          potential from the vacuum level.\
           The best choice will depend on the basis set chosen.')
 parser.add_argument(
     '--extent',

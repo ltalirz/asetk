@@ -76,24 +76,48 @@ echo "### Running CP2K calculation ###"
 echo "${cp2k_binary} < scf.inp | tee scf.out"
 ${para_prefix} ${cp2k_binary} -i scf.inp | tee scf.out
 
-echo "### Extrapolating cube filesn ###"
+echo "### Summing cube files ###"
+cp2k-sumbias.py \
+  --cubes ANTHRACENE-WFN*cube \
+  --levelsfile scf.out \
+  --vmin -2.0 --vmax -1.0 --vstep 0.50
+
+echo "### Performing STM simulation ###"
+stm.py \
+  --stmcubes stm_*.cube \
+  --heights 6.0 \
+  --format 'plain' \
+  --plot
+
+
+echo "### Extrapolating wave functions ###"
 cp2k-extrapolate.py \
   --hartree ANTHRACENE-v_hartree-1_0.cube \
   --levelsfile scf.out \
   --height 2.5 \
   --extent 10 \
-  *WFN*cube
+  ANTHRACENE*WFN*cube
 
-echo "### Summing cube files"
+mkdir -p extrapolated
+mv x.*cube extrapolated/
+cd extrapolated
+
+echo "### Summing cube files ###"
 cp2k-sumbias.py \
-  --cubes *WFN*cube \
-  --levelsfile scf.out \
-  --vmin -2.0 --vmax 2.0 --vstep 0.50
+  --cubes x.ANTHRACENE-WFN*cube \
+  --levelsfile ../scf.out \
+  --vmin -2.0 --vmax -1.0 --vstep 0.50
 
 echo "### Performing STM simulation ###"
 stm.py \
-  --stmcubes stm_+2.00V.cube \
-  --heights 4.0 \
+  --stmcubes stm_*.cube \
+  --heights 6.0 \
   --format 'plain' \
   --plot
+
+cd ..
+
+echo "### FINISHED ###"
+echo "Find regular STM simulation in current working directory"
+echo "and extrapolated results in extrapolated/"
 

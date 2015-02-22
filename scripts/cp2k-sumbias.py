@@ -25,6 +25,10 @@ parser.add_argument(
     help='File containing the energy levels. Can be either CP2K output\
           or .MOLog file.')
 parser.add_argument(
+    '--fermi',
+    metavar='U',
+    help='Specify Fermi energy [eV]. If not specified, it is read from levelsfile.')
+parser.add_argument(
     '--vfile',
     metavar='FILENAME',
     help='Provide a file containing a list of voltages (one per line) \
@@ -79,6 +83,13 @@ else:
 print("Read spectrum from {f}".format(f=args.levelsfile))
 print(spectrum)
 
+if args.fermi is not None:
+    fermi = args.fermi
+else:
+    fermi = spectrum.fermi
+print("Zero bias at Fermi energy {:.3f} eV.".format(fermi))
+spectrum.shift(-fermi)
+
 # Reading headers of cube files
 cubes = []
 print("\nReading headers of {} cube files".format(len(args.cubes)))
@@ -96,23 +107,25 @@ for vlist in [pos_bias, neg_bias]:
     sumcube.title = "STM cube\n"
     sumcube.data = np.zeros(sumcube.shape)
     for v in vlist:
-        print("{:+7.3f} V \n-----------------------------------".format(v))
+        print("{:+7.3f} V bias\n-----------------------------------".format(v))
         sumcube.comment = "Sample bias {:+4.2f} V\n".format(v)
         sumcube.filename = "stm_{:+4.2f}V.cube".format(v)
 
         n_to_sum = 0
         for spin, levels in zip(spectrum.spins, spectrum.energylevels):
-            for index, l in enumerate(levels):
+            for lindex, l in enumerate(levels):
                 e = l.energy
                 o = l.occupation
 
                 # If we need this level
+                if hasattr(l, 'used'):
+                    break
                 if e*v >= 0 and e*v < v**2:
                     n_to_sum += 1
                     # find cube file
                     found = False
-                    for c in cubes:
-                        if c.wfn == index+1 and c.spin == spin+1:
+                    for cindex, c in enumerate(cubes):
+                        if c.wfn == lindex+1 and c.spin == spin+1:
                             found = True
                             print("Reading cube file for spin {s}, energy {e:.6f} eV, occupation {o}"\
                                   .format(s=spin+1,e=e, o=o))
@@ -123,8 +136,8 @@ for vlist in [pos_bias, neg_bias]:
 
                             # each cube file and corresponding level 
                             # needs to be read only once.
-                            cubes.remove(c)
-                            levels.levels.remove(l)
+                            l.used = True
+                            #c.used = True
 
                             if(not args.psi_squared):
                                 tmp.data = np.square(tmp.data)
@@ -137,9 +150,9 @@ for vlist in [pos_bias, neg_bias]:
                     if not found:
                         print("Missing cube file for spin {s}, energy {e:.6f} eV, occupation {o}"\
                                .format(s=spin+1,e=e,o=o))
-            if n_to_sum == 0:
-                print("No new cubes for bias {:+4.3f}".format(v))
-            # When all required levels have been added, write sum            
+        if n_to_sum == 0:
+            print("No new cubes for bias {:+4.3f}".format(v))
+        # When all required levels have been added, write sum            
         print("Writing {}".format(sumcube.filename))
         sumcube.write_cube_file()
         print("")
