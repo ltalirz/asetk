@@ -89,6 +89,10 @@ else:
     fermi = spectrum.fermi
 print("Zero bias at Fermi energy {:.3f} eV.".format(fermi))
 spectrum.shift(-fermi)
+# Without smearing, the Fermi energy in CP2K coincides *exactly*
+# with the energy of the HOMO. We want the HOMO to be occupied,
+# i.e. it should appear at a slightly negative energy.
+spectrum.shift(-1.0e-6)
 
 # Reading headers of cube files
 cubes = []

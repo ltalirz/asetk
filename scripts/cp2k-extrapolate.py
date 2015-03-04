@@ -124,6 +124,15 @@ for fname in args.cubes:
     dKX = 2*np.pi*np.linalg.norm(cube.dz) / np.linalg.norm(cube.cell[0])
     dKY = 2*np.pi*np.linalg.norm(cube.dz) / np.linalg.norm(cube.cell[1])
 
+    if E > 0:
+        msg = """
+Wave function {} has energy {:.2f} eV, which is {:.2f} eV above the average
+Hartree potential at the extrapolation plane.
+The extrapolation plane may be too close to the sample surface. 
+If this is not the case, the corresponding wave function is indeed
+an unbound solution and cannot be extrapolated using this tool."""
+        raise ValueError(msg.format(fname, cube.energy, cube.energy-hartree_avg))
+
     fourier = np.fft.rfft2(plane)
     nKX, nKY = fourier.shape
 

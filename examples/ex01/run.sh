@@ -21,8 +21,8 @@ cat > scf.inp <<EOF
       &V_HARTREE_CUBE
       &END V_HARTREE_CUBE
       &MO_CUBES
-        NHOMO 5
-        NLUMO 5
+        NHOMO 6
+        NLUMO 3
         WRITE_CUBE T
       &END
     &END
@@ -61,15 +61,20 @@ cat > scf.inp <<EOF
 &END FORCE_EVAL
 EOF
 
+echo "\n\n"
 echo "### Running CP2K calculation ###"
 echo "${cp2k_binary} < scf.inp | tee scf.out"
 ${para_prefix} ${cp2k_binary} -i scf.inp | tee scf.out
 
+
+mkdir -p $stm_dir
+cd $stm_dir
+
 echo "### Summing cube files ###"
 cp2k-sumbias.py \
-  --cubes ANTHRACENE-WFN*cube \
-  --levelsfile scf.out \
-  --vmin -3.0 --vmax 1.0 --vstep 1.0 \
+  --cubes ../ANTHRACENE-WFN*cube \
+  --levelsfile ../scf.out \
+  --vmin -3.0 --vmax 0.0 --vstep 1.0 \
   | tee sumbias.out
 
 echo "### Performing STM simulation ###"
@@ -79,6 +84,8 @@ stm.py \
   --format 'plain' \
   --plot \
   | tee stm.out
+
+cd ../
 
 
 echo "### Extrapolating wave functions ###"
@@ -90,15 +97,15 @@ cp2k-extrapolate.py \
   ANTHRACENE*WFN*cube \
   | tee extrapolate.out
 
-mkdir -p extrapolated
-mv x.*cube extrapolated/
-cd extrapolated
+mkdir -p $stm_ex_dir
+mv x.*cube $stm_ex_dir
+cd $stm_ex_dir
 
 echo "### Summing cube files ###"
 cp2k-sumbias.py \
   --cubes x.ANTHRACENE-WFN*cube \
   --levelsfile ../scf.out \
-  --vmin -3.0 --vmax 1.0 --vstep 1.0 \
+  --vmin -3.0 --vmax 0.0 --vstep 1.0 \
   | tee sumbias.out
 
 echo "### Performing STM simulation ###"
@@ -111,7 +118,9 @@ stm.py \
 
 cd ..
 
+echo ""
 echo "### FINISHED ###"
-echo "Find regular STM simulation in current working directory"
-echo "and extrapolated results in extrapolated/"
+
+echo -e "$stm_dir\t\t\t regular STM simulation"
+echo -e "$stm_ex_dir\t STM simulation based on extrapolated wave functions"
 

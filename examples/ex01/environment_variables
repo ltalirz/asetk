@@ -7,4 +7,11 @@ cp2k_libdir="$CP2K_LIBDIR"
 
 # your mpi prefix
 # leave empty when running serial version
+module load cp2k mvapich2/1.9
 para_prefix="mpiexec -np 4"
+
+
+# where stm stm output will be stored
+stm_dir='./stm'
+stm_ex_dir='./stm-extrapolated'
+

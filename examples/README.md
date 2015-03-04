@@ -12,6 +12,6 @@ List of examples
 
  ex01/ Constant-height STM simulation for anthracene.
 
-       The tip is placed 5 Angstroms above the molecular plane.
+       The tip is placed 6 Angstroms above the molecular plane.
        Results with and without wave function extrapolation are compared.
 
