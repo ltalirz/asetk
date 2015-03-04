@@ -13,6 +13,9 @@ Formats supported:
  * Quantum ESPRESSO: Reading of some aspects from data.xml
  * Yambo: Reading of ndb.QP database as well as the yambo output and o.qp files
 
+The toolkit is released under the MIT license.
+Note that ASE is released under the GNU Lesser General Public License (LGPL).
+
 
 Installation requirements
 -------------------------
