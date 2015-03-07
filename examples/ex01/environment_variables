@@ -6,8 +6,8 @@ cp2k_binary="cp2k.popt"
 cp2k_libdir="$CP2K_LIBDIR"
 
 # your mpi prefix
-# leave empty when running serial version
-module load cp2k mvapich2/1.9
+# comment when running serial version
+module load mvapich2/1.9 cp2k python/2.7.5 ase/3.8.1
 para_prefix="mpiexec -np 4"
 
 

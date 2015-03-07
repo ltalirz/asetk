@@ -49,19 +49,27 @@ cat > scf.inp <<EOF
      COORD_FILE_NAME ./anthracene.xyz
      COORDINATE xyz
     &END
+    ### Note ###
+    # Using more accurate basis sets will extend the range of validity
+    # for the tip-sample distance. Still, even using the TZV2P basis
+    # set, at 6 Angstroms tip-sample distance you will observe a difference,
+    # when using extrapolation.
     &KIND C
-      BASIS_SET TZV2P-MOLOPT-GTH
+      #BASIS_SET TZV2P-MOLOPT-GTH  
+      BASIS_SET DZVP-MOLOPT-GTH
       POTENTIAL GTH-PBE-q4
     &END KIND
     &KIND H
-      BASIS_SET TZV2P-MOLOPT-GTH
+      #BASIS_SET TZV2P-MOLOPT-GTH
+      BASIS_SET DZVP-MOLOPT-GTH
       POTENTIAL GTH-PBE-q1
     &END KIND
   &END SUBSYS
 &END FORCE_EVAL
 EOF
 
-echo "\n\n"
+echo ""
+echo ""
 echo "### Running CP2K calculation ###"
 echo "${cp2k_binary} < scf.inp | tee scf.out"
 ${para_prefix} ${cp2k_binary} -i scf.inp | tee scf.out
@@ -120,7 +128,8 @@ cd ..
 
 echo ""
 echo "### FINISHED ###"
+echo "See"
 
-echo -e "$stm_dir\t\t\t regular STM simulation"
-echo -e "$stm_ex_dir\t STM simulation based on extrapolated wave functions"
+echo -e "$stm_dir\t\t\t for regular STM simulation"
+echo -e "$stm_ex_dir\t STM for simulation based on extrapolated wave functions"
 
