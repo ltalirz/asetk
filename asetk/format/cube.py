@@ -386,8 +386,6 @@ class Cube(object):
          
         * return_object
             If True, returns Plane object (which knows about its extent).
-            Note: For plotting with matplotlib, you still need to
-                  plane = plane.swapaxes(0,1)
         * replica
             replica=[3,4] will create 3x4 replicas of the original plane
         * resample
@@ -425,10 +423,6 @@ class Cube(object):
             plane.resample(resample)
 
         if return_object:
-            # matplotlib will plot the 1st index along y
-            # and the 2nd index along x
-            #plane = plane.swapaxes(0,1)
-
             return plane
         else:
             return plane.data

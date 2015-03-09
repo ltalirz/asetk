@@ -1,3 +1,5 @@
+# Following code snippet by ChristopheD from
+# http://stackoverflow.com/a/3160819/1069467
 import time
 import sys
 

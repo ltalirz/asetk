@@ -16,3 +16,11 @@ List of examples
 
     The tip is placed 6 Angstroms above the molecular plane.
     Results with and without wave function extrapolation are compared.
+### ex02/  
+
+    Constant-height STS simulation for anthracene.
+
+    The tip is placed 3 Angstroms above the molecular plane.
+    The STS data is saved in the cube file format, where the z dimension
+    serves as the energy axis.
+    For simplicity, no extrapolation is performed.

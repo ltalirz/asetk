@@ -1,7 +1,12 @@
 #!/bin/bash
 
 echo "### Reading environment variables ###"
-source ./environment_variables
+source ../environment_variables
+
+# where stm stm output will be stored
+stm_dir='./stm'
+stm_ex_dir='./stm-extrapolated'
+
 
 cat > scf.inp <<EOF
 &GLOBAL
@@ -68,8 +73,7 @@ cat > scf.inp <<EOF
 &END FORCE_EVAL
 EOF
 
-echo ""
-echo ""
+echo -e "\n\n"
 echo "### Running CP2K calculation ###"
 echo "${cp2k_binary} < scf.inp | tee scf.out"
 ${para_prefix} ${cp2k_binary} -i scf.inp | tee scf.out

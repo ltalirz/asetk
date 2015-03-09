@@ -10,8 +10,3 @@ cp2k_libdir="$CP2K_LIBDIR"
 module load mvapich2/1.9 cp2k python/2.7.5 ase/3.8.1
 para_prefix="mpiexec -np 4"
 
-
-# where stm stm output will be stored
-stm_dir='./stm'
-stm_ex_dir='./stm-extrapolated'
-

@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(
     description='Performs Scanning Tunneling Spectroscopy Simulation.')
 parser.add_argument('--version', action='version', version='%(prog)s 13.12.2013')
 parser.add_argument(
-    'cubes',
+    '--cubes',
     nargs='+',
     metavar='WILDCARD',
     help='Gaussian cube files containing the Kohn-Sham orbitals psi_i \
@@ -35,23 +35,23 @@ parser.add_argument(
     default='sts.cube',
     help='Name of cube file for STS simulation.')
 parser.add_argument(
-    '--emin',
-    metavar='ENERGY',
+    '--vmin',
+    metavar='U',
     default=-3.0,
     type=float,
-    help='Minimum bias for STS [eV].')
+    help='Minimum bias for STS [V].')
 parser.add_argument(
-    '--emax',
-    metavar='ENERGY',
+    '--vmax',
+    metavar='U',
     default=+3.0,
     type=float,
-    help='Maximum bias for STS [eV].')
+    help='Maximum bias for STS [V].')
 parser.add_argument(
-    '--de',
-    metavar='ENERGY',
+    '--vstep',
+    metavar='U',
     default=+0.01,
     type=float,
-    help='Bias step for STS [eV].')
+    help='Bias step for STS [V].')
 parser.add_argument(
     '--eref',
     metavar='ENERGY',
@@ -164,8 +164,8 @@ for spin, levels in zip(spectrum.spins, spectrum.energylevels):
         e = l.energy
         o = l.occupation
         # If we need the cube file for this level..
-        if e >= args.emin - eb and \
-           e <= args.emax + eb:
+        if e >= args.vmin - eb and \
+           e <= args.vmax + eb:
 
                found = False
                for cube in cubes:
@@ -188,20 +188,20 @@ print("\nInitializing STS cube")
 stscube = cp2k.WfnCube.from_file(required_cubes[0].filename, read_data=True)
 
 stscube.title = "STS data (z axis = energy)\n"
-stscube.comment = "Range [{:4.2f} V, {:4.2f} V], de {:4.3f} V, FWHM {:4.3f} V {}\n" \
-               .format(args.emin, args.emax, args.de, args.FWHM, args.bmethod)
+stscube.comment = "Range [{:4.2f} V, {:4.2f} V], vstep {:4.3f} V, FWHM {:4.3f} V {}\n" \
+               .format(args.vmin, args.vmax, args.vstep, args.FWHM, args.bmethod)
 # adjust z-dimension for energy
 shape = np.array(stscube.data.shape)
-shape[2] = int( (args.emax - args.emin) / args.de) + 1
+shape[2] = int( (args.vmax - args.vmin) / args.vstep) + 1
 stscube.data = np.zeros(shape, dtype=float)
 
 # During export, these numbers will be
 # "converted from Angstrom to Bohr"
 a02A = constants.a0 / constants.Angstrom
-stscube.origin[2] = args.emin * a02A
-stscube.cell[2] = np.array([0,0,args.emax]) * a02A
+stscube.origin[2] = args.vmin * a02A
+stscube.cell[2] = np.array([0,0,args.vmax]) * a02A
 
-zrange = np.linspace(args.emin, args.emax, shape[2])
+zrange = np.linspace(args.vmin, args.vmax, shape[2])
 
 if args.print_weights:
     wfile = open(args.print_weights, 'w')
@@ -241,10 +241,10 @@ for cube in required_cubes:
         wfile.write('{:6d} {:5d} {:10.3f} {:14.4e}\n'.\
                     format(cube.wfn, cube.spin, cube.energy, weight))
 
-    emin = tmp.energy - eb
-    emax = tmp.energy + eb
-    imin = (np.abs(zrange-emin)).argmin()
-    imax = (np.abs(zrange-emax)).argmin()
+    vmin = tmp.energy - eb
+    vmax = tmp.energy + eb
+    imin = (np.abs(zrange-vmin)).argmin()
+    imax = (np.abs(zrange-vmax)).argmin()
 
     for i in range(imin,imax+1):
         stscube.data[:,:,i] += plane * broadening(tmp.energy - zrange[i])
