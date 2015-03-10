@@ -66,7 +66,7 @@ EOF
 echo -e "\n\n"
 echo "### Running CP2K calculation ###"
 echo "${cp2k_binary} < scf.inp | tee scf.out"
-#${para_prefix} ${cp2k_binary} -i scf.inp | tee scf.out
+${para_prefix} ${cp2k_binary} -i scf.inp | tee scf.out
 
 
 echo "### Performing STS simulation ###"
@@ -83,6 +83,7 @@ echo -e "\n"
 echo "### Extracting plane for plotting ###"
 cube-ex-plane.py sts.cube x 16 
 
+echo "### Plotting plane ###"
 echo "python ./plot.py"
 python ./plot.py
 
