@@ -2,7 +2,7 @@
 
 Representation of a spectrum.
 Main functionality is to read from BerkeleyGW output, eqp.dat files
-and also netcdf databases.
+and also hdf5 databases.
 """
 
 import re
@@ -36,6 +36,15 @@ class Spectrum(object):
         These files are written by sigma.x"""
         tmp = Spectrum()
         tmp.read_from_log(fname, mode=mode)
+        return tmp
+
+    @classmethod
+    def from_hdf5_db(cls, fname=None, mode=None):
+        """Create Spectrum from eps0mat.h5 file
+        
+        These files are written by epsilon.x"""
+        tmp = Spectrum()
+        tmp.read_from_hdf5_db(fname, mode=mode)
         return tmp
 
     @property
@@ -173,7 +182,7 @@ class Spectrum(object):
         else:
             raise ValueError("Unknown mode {}".format(mode))
 
-        kpoints = [[] for s in self.spins]
+        spins = [[] for s in self.spins]
         for kmatch in kmatches:
             lines = kmatch.splitlines()
 
@@ -194,57 +203,63 @@ class Spectrum(object):
             levels = fu.EnergyLevels(energies=np.array(energies, dtype=float))
 
             kpt = fu.KPoint(kvector=kvector, energylevels=levels)
-            kpoints[ispin].append(kpt)
+            spins[ispin].append(kpt)
                      
         self.dispersions=[]
-        for k in kpoints:
-            disp = fu.Dispersion(kpoints=k)
+        for s in spins:
+            disp = fu.Dispersion(kpoints=s)
             self.dispersions.append(disp)
 
 
-#    def read_from_netcdf_db(self, fname="ndb.QP", mode="QP"):
-#        """Read from netCDF database
-#        
-#        requires netCDF4 python module"""
-#
-#        from netCDF4 import Dataset
-#        f = Dataset(fname, 'r')
-#
-#        QP_kpts =  f.variables['QP_kpts'][:]
-#        QP_table = f.variables['QP_table'][:]
-#        QP_E_Eo_Z =  f.variables['QP_E_Eo_Z'][:]
-#
-#        nk = QP_kpts.shape[1]
-#        nbnd = QP_table.shape[1] / nk
-#        nspin = QP_E_Eo_Z.shape[0]
-#        if mode == "QP":
-#            iener = 0
-#        elif mode == "DFT":
-#            iener = 1
-#        else:
-#            print("Error: Did not recognize mode '{}'.".format(mode))
-#
-#        self.spins=[]
-#        self.dispersions=[]
-#
-#        for ispin in range(nspin):
-#
-#            energylevels = []
-#            kvectors = []
-#            for ik in range(nk):
-#                k = QP_kpts[:, ik]
-#                e = QP_E_Eo_Z[0, ik*nbnd : (ik+1)*nbnd, iener] * atc.Ha / atc.eV
-#                levels = fu.EnergyLevels(energies=e,occupations=None)
-#
-#                energylevels.append(levels)
-#                kvectors.append(k)
-#
-#            disp = Dispersion(energylevels=energylevels, kvectors = kvectors)
-#
-#            self.dispersions.append(disp)
-#            self.spins.append(ispin)
-#
-#        ## setting HOMO to zero
-#        #if ihomo:
-#        #    energies -= energies[ihomo]
-#
+    def read_from_hdf5_db(self, fname="eps0mat.h5", mode="QP"):
+        """Read from HDF5 database
+        
+        requires netCDF4 python module"""
+
+        from netCDF4 import Dataset
+
+        f = Dataset(fname, 'r')
+        #print(f.groups)
+        kpoints_grp = f.groups['mf_header'].groups['kpoints']
+        #kpoints_grid = kpoints_grp.variables['kgrid'][:]
+        kpoints_rk = kpoints_grp.variables['rk'][:]
+        #kpoints_nrk = kpoints_grp.variables['nrk'][:]
+        kpoints_el = kpoints_grp.variables['el'][:]
+        kpoints_nspin = kpoints_grp.variables['nspin'][:]
+        kpoints_mnband = kpoints_grp.variables['mnband'][:]
+        f.close()
+
+        nk = kpoints_rk.shape[0]
+        nbnd = kpoints_mnband
+        nspin = kpoints_nspin
+
+        #if mode == "QP":
+        #    iener = 0
+        #elif mode == "DFT":
+        #    iener = 1
+        #else:
+        #    print("Error: Did not recognize mode '{}'.".format(mode))
+
+        self.spins=[]
+        self.dispersions=[]
+
+        for ispin in range(nspin):
+
+            self.spins.append(ispin)
+
+            kpoints = []
+            for ik in range(nk):
+                k = kpoints_rk[ik]
+                e = kpoints_el[ispin, ik, :] * atc.Ry / atc.eV
+                levels = fu.EnergyLevels(energies=e,occupations=None)
+
+                kpt = fu.KPoint(kvector=k, energylevels=e)
+                kpoints.append(kpt)
+
+            disp = fu.Dispersion(kpoints=kpoints)
+            self.dispersions.append(disp)
+
+        ## setting HOMO to zero
+        #if ihomo:
+        #    energies -= energies[ihomo]
+
