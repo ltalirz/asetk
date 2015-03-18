@@ -122,8 +122,8 @@ class EnergyLevels(object):
             if not self.fermi == b.fermi:
                 self.fermi = None
         else:
-            raise TypeError("Unsupported operand type(s) for +: '{}' and '{}'")\
-                  .format(self.__class__, type(other))
+            raise TypeError("Unsupported operand type(s) for +: '{}' and '{}'"\
+                  .format(type(self), type(b)))
 
         return self
 
@@ -289,8 +289,7 @@ class Dispersion(object):
 
     @property
     def energies(self):
-        e = Energylevels(self.energylevels)
-        return e.energies
+        return self.energylevels.energies
 
     @property
     def kvectors(self):
@@ -308,7 +307,7 @@ class Dispersion(object):
 
     def merge_kpoints(self):
         kv = [0,0,0]
-        levels = Energylevels([k.energylevels for k in self.kpoints])
+        levels = EnergyLevels([k.energylevels for k in self.kpoints])
         weight = 1.0
         self.kpoints = [KPoint(kv,levels,weight)]
 

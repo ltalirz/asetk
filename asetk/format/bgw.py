@@ -253,7 +253,7 @@ class Spectrum(object):
                 e = kpoints_el[ispin, ik, :] * atc.Ry / atc.eV
                 levels = fu.EnergyLevels(energies=e,occupations=None)
 
-                kpt = fu.KPoint(kvector=k, energylevels=e)
+                kpt = fu.KPoint(kvector=k, energylevels=levels)
                 kpoints.append(kpt)
 
             disp = fu.Dispersion(kpoints=kpoints)
