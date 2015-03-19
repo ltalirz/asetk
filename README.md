@@ -7,14 +7,12 @@ atomic structures.
 
 Formats supported:
 
- * CP2K: STM simulation, wave function extrapolation, reading of energy levels
-   from CP2K output and .MOLog files
+ * CP2K: STM simulation, STS simulation, wave function extrapolation,
+   reading of energy levels from CP2K output and .MOLog files
  * IGOR Pro: Writing of .itx files
  * Quantum ESPRESSO: Reading of some aspects from data.xml
  * Yambo: Reading of ndb.QP database as well as the yambo output and o.qp files
-
-The toolkit is released under the MIT license.
-Note that ASE is released under the GNU Lesser General Public License (LGPL).
+ * BerkeleyGW: Reading of some aspects of eps0mat.h5
 
 
 Installation requirements
@@ -31,7 +29,7 @@ Installation instructions
 
 Let $asetk_root be the directory containing the scripts/ asetk/ subdirectories
 
- 1. Let your python distribution know where to find the asetk module by adding 
+ 1. Let your python distribution know where to find the asetk module by adding
     the $asetk_root directory to the PYTHONPATH environment variable.
 
     On Linux and MacOS add to your .bashrc
@@ -43,4 +41,15 @@ Let $asetk_root be the directory containing the scripts/ asetk/ subdirectories
     On Linux and MacOS add to your .bashrc
 
     ``` export PATH=$PATH:$asetk_root/scripts  ```
-    
+
+License information
+-------------------
+
+The toolkit is released under the MIT license.
+Note that ASE is released under the GNU Lesser General Public License (LGPL).
+
+
+If your scientific publication has benefited from the use of asetk,
+please consider an acknowledgement through the following citation
+
+*asetk, https://github.com/ltalirz/asetk, Copyright Leopold Talirz 2013-2015*
