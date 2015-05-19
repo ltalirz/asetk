@@ -233,6 +233,37 @@ class Cube(object):
 
         f.close()
 
+    def get_index(self, dir, d):
+        """Returns index of plane at distance d along direction dir.
+
+        d must be given in Angstroms.
+
+        Note: Assuming orthorhombic cell.
+        """
+        c = self.cell
+
+        if dir is 'x':
+            dmax = c[0][0]
+            step = np.linalg.norm(self.dx)
+        elif dir is 'y':
+            dmax = c[1][1]
+            step = np.linalg.norm(self.dy)
+        elif dir is 'z':
+            dmax = c[2][2]
+            step = np.linalg.norm(self.dz)
+        else:
+            raise ValueError("Did not recognize direction '{}'.".format(dir))
+
+        if d > dmax:
+            raise ValueError("Distance {} exceeds maximum distance {} \
+                              along direction {}".format(d,dmax,dir))
+
+        index = int(round(d / step))
+        #d_real = index * step
+        
+        return index
+
+
     def get_index_above_atoms(self, d, from_below=False, verbose=False):
         """Returns z-index of plane at z=d above topmost atom
         
