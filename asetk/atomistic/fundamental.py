@@ -289,8 +289,7 @@ class Dispersion(object):
 
     @property
     def energies(self):
-        e = Energylevels(self.energylevels)
-        return e.energies
+        return self.energylevels.energies
 
     @property
     def kvectors(self):
@@ -305,6 +304,20 @@ class Dispersion(object):
         for kpt in self.kpoints:
             s.append(kpt.weights)
         return s
+
+    @property
+    def fermi(self):
+        """Returns Fermi energy."""
+        fermis = [k.energylevels.fermi for k in self.kpoints]
+
+        fermi = np.unique(fermis)
+
+        if len( np.unique(fermis) ) != 1:
+            print("There are Fermi energies {}".format(fermis))
+            print("Using the mean {}".format(np.mean(fermis)))
+
+        return np.mean(fermis)
+
 
     def merge_kpoints(self):
         kv = [0,0,0]
