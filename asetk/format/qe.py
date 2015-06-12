@@ -105,11 +105,12 @@ class Spectrum(object):
 
         fermi = np.unique(fermis)
 
-        if len( np.unique(fermis) ) != 1:
+        if len(fermi) == 1:
+            return fermi[0]
+        elif len(fermi) != 1:
             print("There are Fermi energies {}".format(fermis))
             print("Using the mean {}".format(np.mean(fermis)))
-
-        return np.mean(fermis)
+            return np.mean(fermis)
 
     @property
     def nbnd(self):

@@ -255,6 +255,9 @@ class KPoint(object):
     def energies(self):
         return self.energylevels.energies
  
+    @property
+    def fermi(self):
+        return self.energylevels.fermi
  
     def copy(self, kpt):
         """Performs deep copy."""
@@ -313,15 +316,16 @@ class Dispersion(object):
     @property
     def fermi(self):
         """Returns Fermi energy."""
-        fermis = [k.energylevels.fermi for k in self.kpoints]
+        fermis = [k.fermi for k in self.kpoints]
 
         fermi = np.unique(fermis)
 
-        if len( np.unique(fermis) ) != 1:
+        if len(fermi) == 1:
+            return fermi[0]
+        elif len(fermi) != 1:
             print("There are Fermi energies {}".format(fermis))
             print("Using the mean {}".format(np.mean(fermis)))
-
-        return np.mean(fermis)
+            return np.mean(fermis)
 
 
     def merge_kpoints(self):
