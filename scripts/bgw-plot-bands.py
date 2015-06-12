@@ -24,7 +24,8 @@ parser.add_argument(
     '--format',
     metavar='STRING', 
     default=None,
-    help='May be "netcdf_db" or "output" or "qp" (optional)')
+    help='May be "log" for sigma_hp.log file \
+          or "eqp" for output of python script (optional)')
 parser.add_argument(
     '--mode',
     default='QP',
@@ -108,5 +109,5 @@ if args.pickle:
     import pickle
     fname = 'spectrum.p'
     print("Saving pickled spectrum {}".format(fname))
-    pickle.dump(spectrum, open(fname, "wb"), protocol=3)
+    pickle.dump(spectrum, open(fname, "wb"), protocol=2)
 

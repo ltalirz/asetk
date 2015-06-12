@@ -65,6 +65,20 @@ class Spectrum(object):
         return list
 
     @property
+    def fermi(self):
+        """Returns Fermi energy."""
+        fermis = [d.fermi for d in self.dispersions]
+
+        fermi = np.unique(fermis)
+
+        if len( np.unique(fermis) ) != 1:
+            print("There are Fermi energies {}".format(fermis))
+            print("Using the mean {}".format(np.mean(fermis)))
+
+        return np.mean(fermis)
+
+
+    @property
     def occupations(self):
         """Returns list of level occupations of all spins."""
         os = []
