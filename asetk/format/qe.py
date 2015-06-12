@@ -101,7 +101,7 @@ class Spectrum(object):
     @property
     def fermi(self):
         """Returns Fermi energy."""
-        fermis = [el.fermi for d in self.dispersions]
+        fermis = [d.fermi for d in self.dispersions]
 
         fermi = np.unique(fermis)
 
@@ -120,6 +120,7 @@ class Spectrum(object):
             print("Warning: spins have different numer of bands {}"\
                    .format(nbnd))
         return nbnd[0]
+
 
     @property
     def nkpt(self):
@@ -190,7 +191,8 @@ class Spectrum(object):
         kptdatas = re.findall(kptregex, dataxml)
 
         self.dispersions = []
-        for spin in range(1, nspin+1):
+        self.spins = []
+        for spin in range(nspin):
             dispersion = fu.Dispersion()
 
             for kpt in kptdatas:
@@ -210,7 +212,7 @@ class Spectrum(object):
                 if nspin == 1:
                     eigf = 'eigenval.xml'
                 elif nspin == 2:
-                    eigf = 'eigenval{}.xml'.format(spin)
+                    eigf = 'eigenval{}.xml'.format(spin+1)
                 else:
                     print("Error: Can only handle nspin=1, 2")
 
@@ -236,6 +238,7 @@ class Spectrum(object):
                 os.chdir('..')
 
             self.dispersions.append(dispersion)    
+            self.spins.append(spin)    
 
         os.chdir('..')
 
