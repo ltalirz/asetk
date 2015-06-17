@@ -21,10 +21,11 @@ parser.add_argument(
     default=True,
     help='Whether to plot DOS.')
 parser.add_argument(
-    '--tofile',
-    metavar='FILENAME', 
-    default=None,
-    help='Write DOS to file (if specified).')
+    '--to_file',
+    dest='to_file',
+    action='store_true',
+    default=False,
+    help='Whether to write DOS to file.')
 parser.add_argument(
     '--window',
     metavar='ENERGY',
@@ -34,16 +35,19 @@ parser.add_argument(
     '--delta',
     metavar='ENERGY',
     default=0.001,
+    type=float,
     help='the energy grid spacing')
 parser.add_argument(
     '--sigma',
     metavar='ENERGY',
     default=None,
+    type=float,
     help='The sigma of the Gaussian broadening. Equivalent to setting \
           FWHM = sigma*sqrt(8*ln(2)) (kept for backward compatibility).')
 parser.add_argument(
     '--FWHM',
     metavar='ENERGY',
+    type=float,
     default=0.1,
     help='Full-width half-maximum of broadening function.')
 parser.add_argument(
@@ -53,6 +57,7 @@ parser.add_argument(
     help='Method used for broadening: "Gaussian" or "Lorentzian"')
 parser.add_argument(
     '--bepsilon',
+    type=float,
     default=1e-3,
     metavar='WEIGHT',
     help='Reduce computational cost by specifying quantiles that may be neglected.')
@@ -67,17 +72,17 @@ else:
 print(spectrum)
 
 if args.sigma:
-    FWHM = np.sqrt(8.0 * np.log(2.0)) * args.sigma
+    args.FWHM = np.sqrt(8.0 * np.log(2.0)) * args.sigma
 
 for e,s in zip(spectrum.energylevels, spectrum.spins):
     E, DOS = e.dos(bmethod=args.bmethod, FWHM=args.FWHM, bepsilon=args.bepsilon, delta_e = args.delta)
 
     # Write dos to file
-    if args.tofile:
-        header = "DOS from {}, sigma={}, nsigma={}, spin="\
-                .format(args.out, args.sigma, args.nsigma, s)
-        np.savetxt("spin_{}_{}".format(s, args.tofile), 
-                   np.array(zip(E,DOS)).T, header=header)
+    if args.to_file:
+        header = "DOS from {}, FWHM={} eV, spin={}\n E [eV]             DOS"\
+                .format(args.out, args.FWHM, s)
+        np.savetxt("dos_spin{}.dat".format(s), 
+                   np.array(zip(E,DOS)), header=header)
 
     # Plot DOS
     if args.plot:
