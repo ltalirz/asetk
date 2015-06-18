@@ -43,7 +43,7 @@ print("Reading cube file {}".format(args.cube))
 c = Cube.from_file(args.cube, read_data=True)
 
 plane = c.get_plane_above_atoms(args.height, return_object=True,
-                                        replica=args.replicate)
+                                        replica=args.replicate, verbose=True)
 
 
 outfile = '{f}.z{i}.dat'.format(f=args.cube, i=args.height)

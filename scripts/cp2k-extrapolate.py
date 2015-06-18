@@ -152,8 +152,8 @@ an unbound solution and cannot be extrapolated using this tool."""
 
     iz_start = cube.get_index_above_atoms(args.height)
     iz_end = cube.get_index_above_atoms(args.height+args.extent)
-    print("Extrapolation surface at z = {:.1f} Angstroms (plane index {})"\
-            .format(iz_start*cube.dz[2], iz_start+1))
+    print("Extrapolation surface at z = {:.3f} Angstroms (plane index {})"\
+            .format(iz_start*cube.dz[2], iz_start))
     cube.resize([ cube.shape[0], cube.shape[1], iz_end + 1])
 
     for iz in range(iz_start+1, iz_end+1):
