@@ -1,161 +1,184 @@
 #!/usr/bin/env python
+from __future__ import division
 import numpy as np
+import argparse
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.mlab as mlab
+
 import asetk.format.cube as cube
-import ase.io as io
+import asetk.format.igor as igor
 import re
-import argparse
-import os
+
 
 # Define command line parser
 parser = argparse.ArgumentParser(
-    description='Plots STS at given plane from QE cubefile.')
-parser.add_argument('--version', action='version', version='%(prog)s 04.12.2013')
+    description='Plots STS at given height above atoms from QE STS cubefile.')
+parser.add_argument('--version', action='version', version='%(prog)s 19.05.2015')
 parser.add_argument(
-    'cubes',
+    '--cubes',
     nargs='+',
-    metavar='cube files',
-    help='The cube files to be sliced')
+    metavar='FILENAME',
+    help='Cube files')
+#parser.add_argument(
+#    '--normal',
+#    nargs='+',
+#    metavar='DIRECTION',
+#    default='z',
+#    help='Direction of the plane-normal. May be "x", "y" or "z".')
 parser.add_argument(
-    '--dz',
-    metavar='delta z',
-    default=2.5,
+    '--heights',
+    nargs='+',
+    metavar='HEIGHT',
     type=float,
-    help='The height above the topmost atom to extract the plane.')
+    help='Height(s) of plane(s) above atoms [Angstroms].')
 parser.add_argument(
-    '--vac',
-    default=0.0,
-    metavar='0.0 [eV]',
-    help='The vacuum level. If specified, energies are given wrt the vacuum level.')
-parser.add_argument(
-    '--rep',
+    '--replicate',
     default=None,
-    nargs='+',
+    nargs=2,
     type=int, 
-    metavar='nx ny',
-    help='Number of replica along x and y. If just one number is specified, it is taken for both x and y.')
+    metavar='INT',
+    help='Number of replica along x and y.\
+          If just one number is specified, it is taken for both x and y.')
 parser.add_argument(
-    '--samples',
-    default=1000,
-    metavar=int,
-    help='Number of samples for resampling.')
-parser.add_argument(
-    '--vmax',
+    '--stride',
     default=None,
-    metavar=float,
-    help='If specified, maximum value of color scale for all images.')
+    nargs=2,
+    type=float, 
+    metavar='INT',
+    help='If specified, the data will be resampled on a cartesian grid. \
+          --stride 0.5 0.5 will result in a grid twice as fine as the  \
+          original grid of the cube file.')
+parser.add_argument(
+    '--resample',
+    default=None,
+    nargs=2,
+    type=int, 
+    metavar='INT',
+    help='If specified, the data will be resampled on a cartesian grid of \
+          nx x ny points.')
+parser.add_argument(
+    '--format',
+    metavar='STRING',
+    default='plain',
+    help='Specifies format of output file. Can be \'plain\' (matrix of numbers)\
+          or \'igor\' (igor text format of Igor Pro).'
+)
+parser.add_argument(
+    '--plot',
+    dest='plot',
+    action='store_true',
+    default=True,
+    help='Plot data using matplotlib.')
+parser.add_argument(
+    '--plotrange',
+    nargs=2,
+    metavar='VALUE',
+    default=None,
+    type=float,
+    help='If specified, color scale in plot will range from 1st value \
+          to 2nd value.')
 
 args = parser.parse_args()
-
-if args.rep is not None:
-    if len(args.rep) == 1:
-        args.rep = [ args.rep, args.rep]
-    elif len(args.rep) !=2:
-        print('Invalid number of replicas requested')
 
 def get_energy(filename):
     """
     Extract energy from filename sts.-1.000.cube
+                              or   V_-1.000.cube
     """
-    e = re.search('(\-?\d+[\.\d]*?)\.cube', filename).group(1)
-    return float(e) - float(args.vac)
+    e = re.search('(\-?\d+\.?\d*?)\.cube', filename).group(1)
+    #return float(e) - float(args.vac)
+    return float(e)
 
-def set_lim():
-    #ring_center = [33.6,19.1]
-    #ring_diameter = 38.6
-    #plt.xlim([ ring_center[0]-ring_diameter/2, ring_center[0]+ring_diameter/2])
-    #plt.ylim([ ring_center[1]-ring_diameter/2, ring_center[1]+ring_diameter/2])
-    a=0
-    #plt.ylim([0, 26])
+# Make list of jobs
+if args.replicate is not None:
+    if len(args.replicate) == 1:
+        args.replicate = [ args.replicate, args.replicate]
+    elif len(args.replicate) !=2:
+        print('Invalid specification of replicas. \
+               Please specify --replicate <nx> <ny>.')
 
-def resample(plane, cube, rep=None, nsamples=1000):
-    """Resamples data in cartesian coordinates.
-
-    Assumptions:
-    - data.shape == [self.data.shape[i] for i in axes]
-    """
-    nx,ny,nz    = cube.data.shape
-    dx,dy,dz    = cube.atoms.cell / cube.data.shape
-
-    if rep:
-        plane = np.tile(plane, rep)
-        nx *= rep[0]
-        ny *= rep[1]
+if args.stride is not None and args.resample is not None:
+    print("Error: Please specify either --stride or --resample")
         
-    plane = plane.flatten()
-    pos   = [ i*dx+j*dy for i in range(nx) for j in range(ny) ]
-    x,y,z = zip(*pos)
+# Iterate over supplied cube files
+for fname in args.cubes:
+    print("\nReading {n} ".format(n=fname))
+    c = cube.Cube.from_file(fname, read_data=True)
+    dS = c.dx[0] * c.dy[1]
 
-    extent = (np.min(x),np.max(x),np.min(y),np.max(y))
-    xnew = np.linspace(extent[0], extent[1], nsamples)
-    ynew = np.linspace(extent[2], extent[3], nsamples)
-
-    resampled = mlab.griddata(x, y , plane, xnew, ynew)
-    # for some reason, I need to revert the x axis for imshow
-    resampled = resampled[::-1,:]
-
-    return [resampled, extent]
-
-
-files = args.cubes
-fig = plt.figure(figsize=(5,5))
-
-# cube to get data.shape
-tmpcube = cube.Cube.from_file(files[0], read_data=True)
-dS = tmpcube.dx[0] * tmpcube.dy[1]
-print(dS)
-
-for f in files:
-    # Reading cube files is the most time consuming part of the routine.
-    # Since we need only one plane out of each cube file,
-    # we save it to disk for reuse.
-    planefile = "{f}.z{d}".format(f=f,d=args.dz)
-
-    plane = None
-    if( os.path.isfile(planefile) ):
-        plane = np.genfromtxt(planefile)
+    if args.stride:
+        s = args.stride
+        resample = [ int(round(c.nx/s[0])), 
+                     int(round(c.ny/s[1])) ]
     else:
-        c = cube.Cube.from_file(f, read_data=True)
-        plane = c.get_plane_above_atoms(args.dz)
-        # For STS at zero temperature, 
-        # the occupation of the level in the calculation is irrelevant
-        #plane = plane * tmp.occupation
-        np.savetxt(planefile, plane)
+        resample = args.resample
 
-    resampled, extent = resample(plane, cube=tmpcube, rep=args.rep, nsamples=args.samples)
-    yshift = 0
-    extent = [ extent[0], extent[1], extent[2] + yshift, extent[3] + yshift]
+    for p in args.heights:
+        planefile = None
+        header = "STS at based on {}".format(fname)
 
-    weight = np.sum ( np.sum( plane ) ) * dS * args.rep[0] 
+        planefile = "{}.d{}".format(fname,p)
+        header += ", height = {:.2f} A".format(p)
+         
+        plane = None
+        #index = c.get_index(args.normal, p)
+        plane = c.get_plane_above_atoms(p, return_object=True,
+                                        replica=args.replicate, verbose=True)
 
-    print('max {m}, min {min}'.format(m=np.max(resampled), min=np.min(resampled)))
+        #plane = c.get_plane(args.normal, index,
+        #        return_object=True, replica=args.replicate, resample=resample)
 
-    # plotting
-    plt.clf()
+        # for details of plane object, see asetk/format/cube.py
 
-    cax = plt.imshow(resampled, extent=extent, vmax = float(args.vmax), cmap='gray')
-    plt.xlabel('x [$\AA$]')
-    plt.ylabel('y [$\AA$]')
-    plt.title('E={:4.2f} eV, w = {:.1e}'.format(get_energy(f), weight))
+        data = plane.data
+        weight = np.sum ( np.sum( plane.data ) ) * dS
+        imdata = plane.imdata
+        extent = plane.extent
 
-    cbar = fig.colorbar(cax, format='%.2e')
-    cbar.set_label('$\\rho(E)$')
-    set_lim()
-   
-    #io.write('atoms.png',atoms)
-    #model = plt.imread('atoms.png')
-    #plt.imshow(model, extent=extent)
-    
-    delta=0.25
-    plt.subplots_adjust(right=1-delta)
-    outname='slice_{d:.2f}.png'.format(d=get_energy(f))
-    plt.savefig(outname, dpi=300)
-    print('Done with {f}'.format(f=f))
-  
-#plt.show()
-   
- 
-    
+        if args.format == 'plain':
+            datafile = planefile + '.dat'
+            print("Writing {} ".format(datafile))
+            np.savetxt(datafile, data, header=header)
+        elif args.format == 'igor':
+            igorwave = igor.Wave2d(
+                    data=data,
+                    xmin=extent[0],
+                    xmax=extent[1],
+                    xlabel='x [Angstroms]',
+                    ymin=extent[2],
+                    ymax=extent[3],
+                    ylabel='y [Angstroms]',
+            )
+            datafile = planefile + '.itx'
+            print("Writing {} ".format(datafile))
+            igorwave.write(datafile)
+        else:
+            print("Error: Unknown format {}.".format(args.format))
+
+        if args.plot:
+            plotfile = planefile + '.png'
+            print("Plotting into {} ".format(plotfile))
+            fig = plt.figure()
+
+            vmin = None
+            vmax = None
+            if args.plotrange:
+                vmin = args.plotrange[0]
+                vmax = args.plotrange[1]
+
+            # when approaching from below, let smaller z be brighter
+            cmap = 'gray'
+            # for some reason, I need to revert the x axis for imshow
+            cax = plt.imshow(imdata, extent=extent, 
+                             cmap=cmap, vmin=vmin, vmax=vmax)
+            plt.xlabel('x [$\AA$]')
+            plt.ylabel('y [$\AA$]')
+
+            plt.title('E={:4.2f} eV, w = {:.1e}'.format(get_energy(fname), weight))
+
+            cbar = fig.colorbar(cax, format='%.1e')
+            cbar.set_label('$\\rho(E)$ $[e/a_0^3]$')
+
+            plt.savefig(plotfile, dpi=300, bbox_inches='tight')
+            plt.close(fig)
