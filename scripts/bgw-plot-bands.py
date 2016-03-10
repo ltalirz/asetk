@@ -72,31 +72,45 @@ print(spectrum)
 
 data = None
 for spin, dispersion in zip(spectrum.spins, spectrum.dispersions):
-    for kpt in dispersion.kpoints:
-        E = kpt.energylevels.energies
-        fermi = kpt.energylevels.fermi
+    # assuming a constant number of bands across k-points
+    nbnd = dispersion.nbnd
 
-        k = np.array([ kpt.kvector[2] for l_ in range(len(E))])
-        # QE likes to place kpoints at -0.5 instead of +0.5
-        #k = [ kp if kp >= 0 else kp+1 for kp in k]
+    for i in range(nbnd):
+        E = [kpt.energylevels[i].energy for kpt in dispersion.kpoints]
+        k = [kpt.kvector[2] for kpt in dispersion.kpoints]
 
-        #k *= np.pi
-        #E -= fermi
-        fermi = 0
-
-        #plt.plot(k,E, 'ko', markersize=2.0)
-        plt.plot(k,E, 'ko')
+        plt.plot(k,E, 'ko-')
         #plt.ylim(fermi - window/2, fermi + window/2)
         #plt.ylim(fermi - window , fermi)
-        plt.xlabel(r'k [$\frac{2\pi}{a}$]')
-        plt.ylabel('E [eV]')
 
-        if data is not None:
-            data = np.concatenate( (data, np.array(list(zip(k,E)))), axis=0 )
-        else:
-            data = np.array(list(zip(k,E)))
+    plt.xlabel(r'k [$\frac{2\pi}{a}$]')
+    plt.ylabel('E [eV]')
 
-np.savetxt('bands.dat', data)
+    #for kpt in dispersion.kpoints:
+    #    E = kpt.energylevels.energies
+    #    fermi = kpt.energylevels.fermi
+
+    #    k = np.array([ kpt.kvector[2] for l_ in range(len(E))])
+    #    # QE likes to place kpoints at -0.5 instead of +0.5
+    #    #k = [ kp if kp >= 0 else kp+1 for kp in k]
+
+    #    #k *= np.pi
+    #    #E -= fermi
+    #    fermi = 0
+
+    #    #plt.plot(k,E, 'ko', markersize=2.0)
+    #    plt.plot(k,E, 'ko')
+    #    #plt.ylim(fermi - window/2, fermi + window/2)
+    #    #plt.ylim(fermi - window , fermi)
+    #    plt.xlabel(r'k [$\frac{2\pi}{a}$]')
+    #    plt.ylabel('E [eV]')
+
+    #    if data is not None:
+    #        data = np.concatenate( (data, np.array(list(zip(k,E)))), axis=0 )
+    #    else:
+    #        data = np.array(list(zip(k,E)))
+
+#np.savetxt('bands.dat', data)
 
 #plt.show()
 

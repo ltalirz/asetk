@@ -90,7 +90,8 @@ class Wave1d(Wave):
 
         if axes is None:
             p=self.parameters
-            x = Axis(symbol='x', min=p['xmin'], max=p['xmax'], unit=p['xlabel'])
+            x = Axis(symbol='x', min=p['xmin'], max=p['xmax'], unit=p['xlabel'],
+                    wavename=self.name)
             self.axes = [x]
 
     def print_data(self):

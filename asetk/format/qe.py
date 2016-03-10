@@ -163,10 +163,9 @@ class Spectrum(object):
 
         savedir = prefix + '.save'
         if not os.path.exists(savedir):
-            print("Error: directory {s} not found.".format(s=savedir))
-            return
-
+            raise IOError("Directory {s} not found.".format(s=savedir))
         os.chdir(savedir)
+
         dataxml = open('data-file.xml', 'r').read()
 
         nspinregex = '<NUMBER_OF_SPIN_COMPONENTS.*?>\s*(\d+)'
@@ -203,8 +202,7 @@ class Spectrum(object):
 
                 kdir = 'K{k:05d}'.format(k=kindex)
                 if not os.path.exists(kdir):
-                    print("Error: directory {s} not found.".format(s=kdir))
-                    return
+                    raise IOError("Directory {s} not found.".format(s=kdir))
 
                 # Read energy levels
                 os.chdir(kdir)
