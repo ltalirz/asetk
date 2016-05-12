@@ -32,8 +32,9 @@ args = parser.parse_args()
 
 eps_inv = bgw.DielectricMatrix.from_hdf5_db(eps0=args.eps0, eps=args.eps)
 
-print(r"$\varepsilon(\omega=0) = 1/\varepsilon^{-1}_{GG'}(\vec{q}=0,\omega=0)$")
-print(eps_inv.macroscopic_epsilon())
+eps_macro = eps_inv.macroscopic_epsilon()
+print("Macroscopic static dielectric constant: epsilon(0) = {:.6f}".format(eps_macro[0]))
+#print(r"$\varepsilon(\omega=0) = 1/\varepsilon^{-1}_{GG'}(\vec{q}=0,\omega=0)$")
 
 
 if args.plot:

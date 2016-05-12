@@ -304,6 +304,23 @@ class DielectricMatrix(object):
         tmp.read_from_hdf5_db(eps0, eps, mode)
         return tmp
 
+    def read_diagonal(self,fname):
+        """Reads matrix diagonal from dielectric matrix
+
+        Takes care of real/complex flavor of epsilon.x
+        """
+        from netCDF4 import Dataset
+
+        f = Dataset(fname, 'r')
+        # indices [q,gvec,spin]
+        data = f.variables['matrix-diagonal'][:,:,:]
+        f.close()
+
+        if data.shape[2] == 2:
+            return data[:,:,0] + 1J*data[:,:,1]
+        else:
+            return data
+
     def read_from_hdf5_db(self, eps0=None, eps=None, mode="diagonal"):
         """Read from HDF5 database
        
@@ -319,89 +336,47 @@ class DielectricMatrix(object):
         Note: This function requires netCDF4 python module
         """
 
-        from netCDF4 import Dataset
+        if mode not in ['diagonal']:
+            raise ValueError("mode '{}' unrecognized.".format(mode))
 
-        # eps0 contains frequency omega = 0
-        fnames = []
+
+        # eps0 contains q = 0
         if eps0 is None:
             eps0 = 'eps0mat.h5'
-
         if not os.path.isfile(eps0):
             raise IOError("Unable to find file {}".format(eps0))
-        else:
-            fnames.append(eps0)
         self.eps0_file = eps0
+        self.eps0_inv_diag = self.read_diagonal(eps0)
 
-        # eps contains frequency omega != 0 and is optional
+
+        # eps contains q != 0 and is optional
         if eps is not None:
-            if os.path.isfile(eps):
-                fnames.append(eps)
-            else:
+            if not os.path.isfile(eps):
                 raise IOError("Unable to find file {}".format(eps))
         else:
             if os.path.isfile('epsmat.h5'):
-                fnames.append('epsmat.h5')
+                eps = 'epsmat.h5'
         self.eps_file = eps
 
+        if eps is not None:
+            self.eps_file = eps
+            self.eps_inv_diag = self.read_diagonal(eps)
 
-        for fname in fnames:
-            f = Dataset(fname, 'r')
-            if mode == 'diagonal':
-                eps0_inv_diag = f.variables['matrix-diagonal'][0,:,0]
-            else:
-                raise ValueError("mode '{}' unrecognized.".format(mode))
-            self.eps0_inv_diag = eps0_inv_diag
-            f.close()
-
-        #kpoints_grp = f.groups['mf_header'].groups['kpoints']
-        ##kpoints_grid = kpoints_grp.variables['kgrid'][:]
-        #kpoints_rk = kpoints_grp.variables['rk'][:]
-        ##kpoints_nrk = kpoints_grp.variables['nrk'][:]
-        #kpoints_el = kpoints_grp.variables['el'][:]
-        #kpoints_nspin = kpoints_grp.variables['nspin'][:]
-        #kpoints_mnband = kpoints_grp.variables['mnband'][:]
-
-        #nk = kpoints_rk.shape[0]
-        #nbnd = kpoints_mnband
-        #nspin = kpoints_nspin
-
-        ##if mode == "QP":
-        ##    iener = 0
-        ##elif mode == "DFT":
-        ##    iener = 1
-        ##else:
-        ##    print("Error: Did not recognize mode '{}'.".format(mode))
-
-        #self.spins=[]
-        #self.dispersions=[]
-
-        #for ispin in range(nspin):
-
-        #    self.spins.append(ispin)
-
-        #    kpoints = []
-        #    for ik in range(nk):
-        #        k = kpoints_rk[ik]
-        #        e = kpoints_el[ispin, ik, :] * atc.Ry / atc.eV
-        #        levels = fu.EnergyLevels(energies=e,occupations=None)
-
-        #        kpt = fu.KPoint(kvector=k, energylevels=levels)
-        #        kpoints.append(kpt)
-
-        #    disp = fu.Dispersion(kpoints=kpoints)
-        #    self.dispersions.append(disp)
 
     def macroscopic_epsilon(self):
-        """Returns macroscopic dielectric function eps(omega)
+        r"""Returns macroscopic dielectric function eps(omega)
+
+        .. math ::
+            \varepsilon(\omega) = 1/\varepsilon^{-1}_{GG'}(\vec{q}=0,\omega)
 
         Note: If only the static dielectric function was provided,
-        it only provides eps(0).
+        it only calculates eps(0).
         """
         eps = []
-        eps.append(1/self.eps0_inv_diag[0])
+        eps.append(1/self.eps0_inv_diag[0,0])
         
-        if self.eps_inv_diag is not None:
-            for e in self.eps_inv_diag:
-                eps.append(1/e)
+        #if self.eps_inv_diag is not None:
+        #    for e in self.eps_inv_diag:
+        #        eps.append(1/e)
 
         return eps
