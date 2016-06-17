@@ -10,6 +10,7 @@ import copy  as cp
 import numpy as np
 import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as atc
+import os.path
 from . import cube
 
 
@@ -278,3 +279,104 @@ class Spectrum(object):
         #if ihomo:
         #    energies -= energies[ihomo]
 
+
+class DielectricMatrix(object):
+
+    """Dielectric matrix epsilon_GG'(q,omega)
+    
+    Provides interface to data stored in eps0mat.h5 and epsmat.h5
+    """
+
+    def __init__(self):
+        """Set up dielectric matrix ."""
+        self.eps0_inv_diag = None
+        self.eps_inv_diag = None
+
+        self.eps0_file = None
+        self.eps_file = None
+
+    @classmethod
+    def from_hdf5_db(cls, eps0=None, eps=None, mode="diagonal"):
+        """Load dielectric matrix from eps0mat.h5 file
+        
+        These files are written by epsilon.x"""
+        tmp = DielectricMatrix()
+        tmp.read_from_hdf5_db(eps0, eps, mode)
+        return tmp
+
+    def read_diagonal(self,fname):
+        """Reads matrix diagonal from dielectric matrix
+
+        Takes care of real/complex flavor of epsilon.x
+        """
+        from netCDF4 import Dataset
+
+        f = Dataset(fname, 'r')
+        # indices [q,gvec,spin]
+        data = f.variables['matrix-diagonal'][:,:,:]
+        f.close()
+
+        if data.shape[2] == 2:
+            return data[:,:,0] + 1J*data[:,:,1]
+        else:
+            return data
+
+    def read_from_hdf5_db(self, eps0=None, eps=None, mode="diagonal"):
+        """Read from HDF5 database
+       
+        parameters
+        ----------
+        eps0:  name of database for static dielectric matrix 
+            (default: eps0mat.h5)
+        eps :  name of database for frequency-dependent dielectric matrix 
+            (default: epsmat.h5)
+        mode:  what to read from the database
+            "diagonal": just read diagonal elements
+
+        Note: This function requires netCDF4 python module
+        """
+
+        if mode not in ['diagonal']:
+            raise ValueError("mode '{}' unrecognized.".format(mode))
+
+
+        # eps0 contains q = 0
+        if eps0 is None:
+            eps0 = 'eps0mat.h5'
+        if not os.path.isfile(eps0):
+            raise IOError("Unable to find file {}".format(eps0))
+        self.eps0_file = eps0
+        self.eps0_inv_diag = self.read_diagonal(eps0)
+
+
+        # eps contains q != 0 and is optional
+        if eps is not None:
+            if not os.path.isfile(eps):
+                raise IOError("Unable to find file {}".format(eps))
+        else:
+            if os.path.isfile('epsmat.h5'):
+                eps = 'epsmat.h5'
+        self.eps_file = eps
+
+        if eps is not None:
+            self.eps_file = eps
+            self.eps_inv_diag = self.read_diagonal(eps)
+
+
+    def macroscopic_epsilon(self):
+        r"""Returns macroscopic dielectric function eps(omega)
+
+        .. math ::
+            \varepsilon(\omega) = 1/\varepsilon^{-1}_{GG'}(\vec{q}=0,\omega)
+
+        Note: If only the static dielectric function was provided,
+        it only calculates eps(0).
+        """
+        eps = []
+        eps.append(1/self.eps0_inv_diag[0,0])
+        
+        #if self.eps_inv_diag is not None:
+        #    for e in self.eps_inv_diag:
+        #        eps.append(1/e)
+
+        return eps
