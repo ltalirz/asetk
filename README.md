@@ -52,4 +52,10 @@ Note that ASE is released under the GNU Lesser General Public License (LGPL).
 If your scientific publication has benefited from the use of asetk,
 please consider an acknowledgement through the following citation
 
-*asetk, https://github.com/ltalirz/asetk, Copyright Leopold Talirz 2013-2015*
+*asetk, https://github.com/ltalirz/asetk, Copyright Leopold Talirz 2013-2016*
+
+Contact information
+-------------------
+
+Contact [leopold.talirz@gmail.com](mailto:leopold.talirz@gmail.com) for any
+questions.
