@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Produce density of states from CP2K MoLog file
+# Produce density of states from CP2K MOLog file
 # Usage: cp2k-dos.py cp2k.out
 import argparse
 import asetk.format.cp2k as cp2k
@@ -9,7 +9,7 @@ import os
 
 # Define command line parser
 parser = argparse.ArgumentParser(
-    description='Produce density of states from CP2K MoLog file')
+    description='Produce density of states from CP2K output or .MOLog file')
 parser.add_argument('--version', action='version', version='%(prog)s 28.02.2014')
 parser.add_argument(
     'out',
@@ -30,6 +30,7 @@ parser.add_argument(
     '--window',
     metavar='ENERGY',
     default=3,
+    type=float,
     help='plot range [-window,window] around Fermi.')
 parser.add_argument(
     '--delta',
