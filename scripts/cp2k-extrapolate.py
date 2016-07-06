@@ -52,6 +52,13 @@ parser.add_argument(
     default=+15.0,
     type=float,
     help='Extent of extrapolation in Angstroms.')
+parser.add_argument(
+    '--weighted_avg',
+    action='store_true',
+    default=False,
+    help='Whether to weight the average of the Hartree potential on the
+    extrapolation plane by the density of the state that is being
+    extrapolated.')
 
 args = parser.parse_args()
 a02A = constants.a0 / constants.Angstrom  # Bohr radius in Angstroms
@@ -95,6 +102,11 @@ if hartree_max - hartree_min > 1.0:
     print("Assumption of constant Hartree potential is violated.")
 print("")
 
+if args.weighted_avg:
+    print("""Using Hartree potential on extrapolation surface, weighted by the
+electron density of the state being extrapolated.""")
+
+
 #bar = progressbar.ProgressBar(niter=len(args.cubes))
 #
 #for fname in args.cubes:
@@ -118,6 +130,16 @@ for fname in args.cubes:
             .format(cube.spin, cube.wfn, cube.energy))
 
     plane = cube.get_plane_above_atoms(args.height)
+
+    if use_weighted_average:
+        density_plane = plane**2 
+        density_plane /= np.sum(density_plane)
+        weighted_hartree = hartree_plane * density_plane
+        weighted_hartree_avg = np.sum(weighted_hartree)
+        print("Weighted average of Hartree potential: {:+.4f} eV" \
+            .format(weighted_hartree_avg/eV2Ha))
+    else:
+        weighted_hartree_avg = hartree_avg
 
     # Note: Working in Hartree atomic units here
     E = (cube.energy - hartree_avg) * eV2Ha * np.dot(cube.dz, cube.dz) / a02A**2
