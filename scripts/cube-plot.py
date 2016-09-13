@@ -55,7 +55,7 @@ parser.add_argument(
           If just one number is specified, it is taken for both x and y.')
 parser.add_argument(
     '--stride',
-    default=None,
+    default=(1,1),
     nargs=2,
     type=float, 
     metavar='INT',
@@ -82,7 +82,7 @@ parser.add_argument(
     dest='plot',
     action='store_true',
     default=True,
-    help='Plot data using matplotlib.')
+    help='Plot data into png using matplotlib.')
 parser.add_argument(
     '--plotrange',
     nargs=2,
@@ -96,6 +96,9 @@ args = parser.parse_args()
 
 # Make list of jobs
 jobs = []
+if args.positions is None:
+    raise ValueError("Please specify --positions")
+
 if args.normal:
     jobs +=  zip(args.positions, [args.normal for _i in range(len(args.positions))])
     if args.normal != 'z':
@@ -107,23 +110,24 @@ if args.replicate is not None:
     if len(args.replicate) == 1:
         args.replicate = [ args.replicate, args.replicate]
     elif len(args.replicate) !=2:
-        print('Invalid specification of replicas. \
+        raise ValueError('Invalid specification of replicas. \
                Please specify --replicate <nx> <ny>.')
 
 if args.stride is not None and args.resample is not None:
-    print("Error: Please specify either --stride or --resample")
+    raise ValueError("Please only specify either --stride or --resample")
+
         
 # Iterate over supplied cube files
 for fname in args.cubes:
     print("\nReading {n} ".format(n=fname))
     c = cube.Cube.from_file(fname, read_data=True)
 
-    if args.stride:
+    if args.resample:
+        resample = args.resample
+    elif args.stride:
         s = args.stride
         resample = [ int(round(c.nx/s[0])), 
                      int(round(c.ny/s[1])) ]
-    else:
-        resample = args.resample
 
     for v,kind in jobs:
         planefile = None
@@ -168,7 +172,7 @@ for fname in args.cubes:
             print("Writing {} ".format(datafile))
             igorwave.write(datafile)
         else:
-            print("Error: Unknown format {}.".format(args.format))
+            raise ValueError("Unknown format {}.".format(args.format))
 
         if args.plot:
             plotfile = planefile + '.png'
@@ -200,4 +204,4 @@ for fname in args.cubes:
                 cbar = fig.colorbar(cax, format='%.2f')
                 cbar.set_label('z [$\AA$]')
 
-            plt.savefig(plotfile, dpi=300)
+            plt.savefig(plotfile, dpi=300, bbox_inches='tight')

@@ -135,7 +135,7 @@ class Cube(object):
         b2A = constants.a0 / constants.Angstrom
         self.origin = np.array(line[1:], dtype=float) * b2A
 
-        shape = np.empty(3)
+        shape = np.empty(3,dtype=int)
         cell = np.empty((3, 3))
         for i in range(3):
             n, x, y, z = [float(s) for s in readline().split()]
