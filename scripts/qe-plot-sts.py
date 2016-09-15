@@ -33,6 +33,13 @@ parser.add_argument(
     type=float,
     help='Height(s) of plane(s) above atoms [Angstroms].')
 parser.add_argument(
+    '--energy_shift',
+    default=0.0,
+    type=float, 
+    metavar='FLOAT',
+    help='Specifies energy shift [eV] to be applied to energies in filenames of STS cubefiles \
+          in order to obtain voltages for STS plots.')
+parser.add_argument(
     '--replicate',
     default=None,
     nargs=2,
@@ -87,7 +94,6 @@ def get_energy(filename):
                               or   V_-1.000.cube
     """
     e = re.search('(\-?\d+\.?\d*?)\.cube', filename).group(1)
-    #return float(e) - float(args.vac)
     return float(e)
 
 # Make list of jobs
@@ -175,7 +181,8 @@ for fname in args.cubes:
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')
 
-            plt.title('E={:4.2f} eV, w = {:.1e}'.format(get_energy(fname), weight))
+            energy = get_energy(fname) + float(args.energy_shift)
+            plt.title('U={:4.2f} V, w = {:.1e}'.format(energy, weight))
 
             cbar = fig.colorbar(cax, format='%.1e')
             cbar.set_label('$\\rho(E)$ $[e/a_0^3]$')
