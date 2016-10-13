@@ -43,7 +43,7 @@ class Cube(object):
         self.origin = origin
         self.atoms = atoms
         self.data = data
-        self.shape_ = None   # stores shape, if grid isn't read
+        self._shape = None   # stores shape, if grid data isn't read
 
     @classmethod
     def from_cube(cls, cube):

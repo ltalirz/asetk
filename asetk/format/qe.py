@@ -7,9 +7,11 @@ import re
 import os
 import copy  as cp
 import numpy as np
+from string import digits
 
 import asetk.atomistic.fundamental as fu
 import asetk.atomistic.constants as atc
+from . import cube
 
 #class Dispersion(object):
 #    """Holds k-points belonging to one spin"""
@@ -243,5 +245,141 @@ class Spectrum(object):
 
     def read_from_output(self, prefix):
         return 0;
+
+
+
+class QECube:
+    """Intermediate cube file format written by pp.x
+
+    These files contain (squared) Kohn-Sham wave functions (?)
+    in a text-based format very similar to the Gaussian cube format.
+    
+    Format specification
+    
+    LINE   FORMAT      CONTENTS
+    ===============================================================
+     1     A           TITLE
+     2     8I8         NX NY NZ NX NY NZ #ATOMS #SPECIES
+     3     I8,6F16.8  IBRAV CELLDM(1:6)
+     4-6   3F16.8      CELL VECTORS IN ALAT UNITS, ONLY IF IBRAV=0
+                       (OTHERWISE CONTINUE WITH LINE 7)
+     7     3F16.8,I8  ???
+     #SPECIES LINES OF SPECIES SPECIFICATION:
+     ...   I4,S4,6.2F INDEX, LABEL, #VALENCE ELECTRONS OF PSEUDO
+     #ATOMS LINES OF ATOM COORDINATES:
+     ...   I5,3F12.6,I4 ATOM INDEX, X, Y, Z [ALAT UNITS], SPECIES INDEX
+     REST: 5E17.9      CUBE DATA (WITH X INCREMENT MOVING FASTEST, THEN
+                       Y AND THEN Z)
+    
+    ALL COORDINATES ARE GIVEN IN ATOMIC UNITS.
+    """
+
+    def __init__(self, filename=None, title=None, cell=None, atoms=None,
+            data=None):
+        """Standard constructor, all parameters default to None"""
+
+        self.filename = filename
+        self.title = title
+        self.cell = cell
+        self.atoms = atoms
+        self.data = data
+        self._shape = None  # stores shape, if grid data isn't read
+
+    @classmethod
+    def from_file(cls, fname, read_data=False):
+        """Creates Cube from cube file"""
+        tmp = QECube()
+        tmp.read_qe_cube_file(fname, read_data=read_data)
+        return tmp
+
+    def read_qe_cube_file(self, fname, read_data=False, v=1):
+        """Reads header and/or data of cube file"""
+        #super(WfnCube, self).read_cube_file(fname, read_data, v)
+        self.filename = fname
+        b2A = atc.a0 / atc.Angstrom
+
+        f = open(fname, 'r')
+        readline = f.readline
+
+        # line 1
+        self.title = readline()
+#       self.comment = readline()
+
+#       axes = [0, 1, 2]
+        # line 2
+        line = readline().split()
+        nx, ny, nz, nxs, nys, nzs, natoms, nspecies = np.array(line, dtype=int)
+        shape = np.array([nx, ny, nz], dtype=int)
+        self._shape = shape
+
+        # line 3
+        line = readline().split()
+        ibrav = int(line[0])
+        alat = float(line[1])
+        celldm = np.array(line[2:],dtype=float)
+        if ibrav > 0:
+            raise ValueError("ibrav > 0 not yet implemented.")
+
+        # lines 4-6
+        cell = np.empty((3,3))
+        for i in range(3):
+            x, y, z = [float(s) for s in readline().split()]
+            cell[i] = np.array([x,y,z], dtype=float)
+        cell *= b2A * alat
+
+        # line 7
+        line = readline().split()
+
+        # species
+        species = np.empty(nspecies, dtype=str)
+        for i in range(nspecies):
+            sindex, symbol, valence_electrons = readline().split()
+            # removing any digits that may be part of the symbol
+            # such as C1, C2, ...
+            species[i] = symbol.translate(None, digits)
+
+        # atoms
+        at_positions = np.empty((natoms, 3))
+        at_symbols = np.empty(natoms, dtype=str)
+        for i in range(natoms):
+            line = readline().split()
+            at_positions[i] = [float(s) for s in line[1:4]]   
+            at_symbols[i] = species[int(line[4])-1]
+
+        at_positions *= b2A * alat
+        pbc = [True, True, True]
+        self.atoms = fu.Atoms(symbols=at_symbols, positions=at_positions, 
+                cell=cell, pbc=pbc)
+
+        if read_data:
+            # Note:
+            # This is already ~1.7x faster than ASE's version.
+            # However, parsing still dominates for reasonable disk speeds
+            # (parsing time = 8x reading time on 480 MB/s SSD)
+            # In order to parse quickly, use read_csv from the pandas module.
+
+            # read() pretty much maxes out the disk read speed.
+            # split() takes a considerable amount of time.
+            # The conversion to float is even more expensive.
+            self.data = np.array(f.read().split(), dtype=float)
+
+            # In QE's format, the fastest index is x, then y, then z
+            self.data = self.data.reshape(shape[::-1])
+            self.data = self.data.swapaxes(0,2)
+            #self.data.shape = shape
+            #if axes != [0, 1, 2]:
+
+        f.close()
+
+    def write_cube_file(self, fname=None):
+        """Writes object to Gaussian cube file
+
+        """
+        tmp = cube.Cube(filename=fname, title=self.title, 
+                comment="Converted from QE cube file\n",
+                origin = np.array([0,0,0]),
+                atoms = self.atoms,
+                data = self.data)
+        tmp.write_cube_file()
 
 
