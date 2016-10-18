@@ -260,12 +260,12 @@ class QECube:
     ===============================================================
      1     A           TITLE
      2     8I8         NX NY NZ NX NY NZ #ATOMS #SPECIES
-     3     I8,6F16.8  IBRAV CELLDM(1:6)
+     3     I8,6F16.8   IBRAV CELLDM(1:6)
      4-6   3F16.8      CELL VECTORS IN ALAT UNITS, ONLY IF IBRAV=0
                        (OTHERWISE CONTINUE WITH LINE 7)
-     7     3F16.8,I8  ???
-     #SPECIES LINES OF SPECIES SPECIFICATION:
-     ...   I4,S4,6.2F INDEX, LABEL, #VALENCE ELECTRONS OF PSEUDO
+     7     3F16.8,I8   ???
+     #SPECIES LINES OF ATOMIC SPECIES INFO:
+     ...   I4,S4,6.2F  INDEX, LABEL, #VALENCE ELECTRONS OF PSEUDO
      #ATOMS LINES OF ATOM COORDINATES:
      ...   I5,3F12.6,I4 ATOM INDEX, X, Y, Z [ALAT UNITS], SPECIES INDEX
      REST: 5E17.9      CUBE DATA (WITH X INCREMENT MOVING FASTEST, THEN
@@ -366,8 +366,6 @@ class QECube:
             # In QE's format, the fastest index is x, then y, then z
             self.data = self.data.reshape(shape[::-1])
             self.data = self.data.swapaxes(0,2)
-            #self.data.shape = shape
-            #if axes != [0, 1, 2]:
 
         f.close()
 
@@ -375,11 +373,17 @@ class QECube:
         """Writes object to Gaussian cube file
 
         """
+	tmp = self.to_cube()
+        tmp.write_cube_file()
+
+    def to_cube(self):
+        """Converts object to Gaussian cube object
+
+        """
         tmp = cube.Cube(filename=fname, title=self.title, 
-                comment="Converted from QE cube file\n",
+                comment="Converted from QE intermediate cube format\n",
                 origin = np.array([0,0,0]),
                 atoms = self.atoms,
                 data = self.data)
-        tmp.write_cube_file()
 
-
+	return tmp
