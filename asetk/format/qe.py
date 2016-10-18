@@ -373,17 +373,19 @@ class QECube:
         """Writes object to Gaussian cube file
 
         """
-	tmp = self.to_cube()
-        tmp.write_cube_file()
+        tmp = self.to_cube()
+        tmp.write_cube_file(fname=fname)
 
     def to_cube(self):
         """Converts object to Gaussian cube object
 
         """
-        tmp = cube.Cube(filename=fname, title=self.title, 
+        tmp = cube.Cube(
+                filename=self.filename,
+                title=self.title, 
                 comment="Converted from QE intermediate cube format\n",
                 origin = np.array([0,0,0]),
                 atoms = self.atoms,
                 data = self.data)
 
-	return tmp
+        return tmp

@@ -20,11 +20,13 @@ parser.add_argument(
     '--cubes',
     nargs='+',
     metavar='FILENAME',
+    default=[],
     help='Cube files')
 parser.add_argument(
     '--qe_cubes',
     nargs='+',
     metavar='FILENAME',
+    default=[],
     help='Files in QE intermediate cube file format as written by pp.x')
 #parser.add_argument(
 #    '--normal',
@@ -94,14 +96,6 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-def get_energy(filename):
-    """
-    Extract energy from filename sts.-1.000.cube
-                              or   V_-1.000.cube
-    """
-    e = re.search('(\-?\d+\.?\d*?)\.cube', filename).group(1)
-    return float(e)
-
 # Make list of jobs
 if args.replicate is not None:
     if len(args.replicate) == 1:
@@ -119,10 +113,12 @@ for fname in args.cubes + args.qe_cubes:
     print("\nReading {n} ".format(n=fname))
 
     if fname in args.cubes:
+        format = 'cube'
         c = cube.Cube.from_file(fname, read_data=True)
     elif fname in args.qe_cubes:
+        format = 'qe_cube'
     	tmp = qe.QECube.from_file(fname, read_data=True)
-	c = tmp.to_cube()
+        c = tmp.to_cube()
 
     dS = c.dx[0] * c.dy[1]
 
@@ -141,7 +137,6 @@ for fname in args.cubes + args.qe_cubes:
         header += ", height = {:.2f} A".format(p)
          
         plane = None
-        #index = c.get_index(args.normal, p)
         plane = c.get_plane_above_atoms(p, return_object=True,
                                         replica=args.replicate, verbose=True)
 
@@ -194,7 +189,14 @@ for fname in args.cubes + args.qe_cubes:
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')
 
-            energy = get_energy(fname) + float(args.energy_shift)
+
+            if format == 'cube':
+                # Extract energy from filename sts.-1.000.cube or   V_-1.000.cube
+                energy = re.search('(\-?\d+\.?\d*?)\.cube', fname).group(1)
+            elif format == 'qe_cube':
+                energy = re.findall('[-+]?\d*\.\d+', c.title)[0]
+
+            energy = float(energy) + float(args.energy_shift)
             plt.title('U={:4.2f} V, w = {:.1e}'.format(energy, weight))
 
             cbar = fig.colorbar(cax, format='%.1e')

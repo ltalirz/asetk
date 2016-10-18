@@ -318,8 +318,10 @@ class DielectricMatrix(object):
 
         if data.shape[2] == 2:
             return data[:,:,0] + 1J*data[:,:,1]
+        elif data.shape[2] == 1:
+            return data[:,:,0]
         else:
-            return data
+            raise IOError("Programming error - wrong dimensions of data array.")
 
     def read_from_hdf5_db(self, eps0=None, eps=None, mode="diagonal"):
         """Read from HDF5 database
