@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
 import asetk.format.cube as cube
+import asetk.format.qe as qe
 import asetk.format.igor as igor
 import sys
 
@@ -19,7 +20,14 @@ parser.add_argument(
     '--cubes',
     nargs='+',
     metavar='FILENAME',
+    default=[],
     help='Cube files')
+parser.add_argument(
+    '--qe_cubes',
+    nargs='+',
+    metavar='FILENAME',
+    default=[],
+    help='Files in QE intermediate cube file format as written by pp.x')
 parser.add_argument(
     '--normal',
     nargs='+',
@@ -118,9 +126,16 @@ if args.stride is not None and args.resample is not None:
 
         
 # Iterate over supplied cube files
-for fname in args.cubes:
+for fname in args.cubes + args.qe_cubes:
     print("\nReading {n} ".format(n=fname))
-    c = cube.Cube.from_file(fname, read_data=True)
+
+    if fname in args.cubes:
+        format = 'cube'
+        c = cube.Cube.from_file(fname, read_data=True)
+    elif fname in args.qe_cubes:
+        format = 'qe_cube'
+        tmp = qe.QECube.from_file(fname, read_data=True)
+        c = tmp.to_cube()
 
     if args.resample:
         resample = args.resample
