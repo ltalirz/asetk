@@ -105,7 +105,6 @@ class Wave(object):
 
         # read axes
         line = lines.pop(0)
-        print(line)
         matches = re.findall("SetScale.+?(?:;|$)", line)
         self.axes = []
         for match in matches:
