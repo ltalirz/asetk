@@ -34,6 +34,12 @@ class Cube(object):
     ALL COORDINATES ARE GIVEN IN ATOMIC UNITS.
     """
 
+    dir_indices = { 
+        'x': 0, 
+        'y': 1, 
+        'z': 2,
+    }
+
     def __init__(self, filename=None, title=None, comment=None, origin=None, 
                  atoms=None, data=None):
         """Standard constructur, all parameters default to None."""
@@ -532,6 +538,41 @@ class Cube(object):
         self.data += c.data
 
         return self
+
+    def roll(self, dir, shift=None, distance=None):
+        """Rolls cube along direction dir
+
+        Positions of atoms are updated accordingly.
+
+        parameters
+        ----------
+        dir: string
+          'x', 'y' or 'z'
+        shift: int
+           how many indices to shift data along dir
+        dist: float
+           (alternative) what distance to shift along dir
+        
+        """
+        dir_index = self.dir_indices[dir]
+        step = np.linalg.norm(self.cell[dir_index] / self.data.shape[dir_index])
+
+
+        if shift:
+            dist_exact = shift * step
+        elif distance:
+            shift = int(distance / step)
+            dist_exact = shift * step
+        else:
+            raise IOError("Please provide either shift (integer) or distance (float)")
+
+        print("Rolling cube file by {:.3f} Angstroms along {}."\
+                .format(dist_exact,dir))
+        self.data = np.roll(self.data, shift=shift, axis=dir_index)
+
+        v = np.zeros(3)
+        v[dir_index] = dist_exact
+        self.atoms.translate(v)
 
 
 class Plane(object):
