@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "### Cleaning all output data ###"
 
-. environment_variables
+. ../environment_variables
 
-rm *.cube *.out *.inp *.dat *.png
-rm ANTHRACENE* 
+rm -rf *.cube *.png *.dat *.out *.inp 
+rm -rf ANTHRACENE* 

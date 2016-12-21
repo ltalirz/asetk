@@ -193,7 +193,7 @@ for fname in args.stmcubes:
             # when approaching from below, let smaller z be brighter
             cmap = 'Greys' if args.from_below else 'gray'
             # for some reason, I need to revert the x axis for imshow
-            cax = plt.imshow(imdata, extent=extent, 
+            cax = plt.imshow(imdata, extent=extent,interpolation='bicubic',
                              cmap=cmap, vmin=vmin, vmax=vmax)
             plt.xlabel('x [$\AA$]')
             plt.ylabel('y [$\AA$]')

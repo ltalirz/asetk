@@ -1,12 +1,11 @@
 # #!/bin/bash
  
 # your local cp2k executable
-cp2k_binary="cp2k.popt"
+cp2k_binary="cp2k.sopt"
 # this directory should contain BASIS_MOLOPT and GTH_POTENTIALS
 cp2k_libdir="$CP2K_LIBDIR"
 
-# your mpi prefix
-# comment when running serial version
-module load mvapich2/1.9 cp2k python/2.7.5 ase/3.8.1
-para_prefix="mpiexec -np 4"
-
+para_prefix=""
+# uncomment for running serial version
+#module load mvapich2/1.9 cp2k python/2.7.5 ase/3.8.1
+#para_prefix="mpiexec -np 4"

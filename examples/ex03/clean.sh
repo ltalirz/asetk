@@ -5,4 +5,4 @@ echo "### Cleaning all output data ###"
 
 rm -rf *.cube *.png *.dat *.out *.inp 
 rm -rf ANTHRACENE* 
-rm -rf ./stm ./stm-extrapolated
+rm -rf ./stm
