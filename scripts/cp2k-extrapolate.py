@@ -147,13 +147,18 @@ for fname in args.cubes:
     dKY = 2*np.pi*np.linalg.norm(cube.dz) / np.linalg.norm(cube.cell[1])
 
     if E > 0:
-        msg = """
-Wave function {} has energy {:.2f} eV, which is {:.2f} eV above the average
-Hartree potential at the extrapolation plane.
-The extrapolation plane may be too close to the sample surface. 
-If this is not the case, the corresponding wave function is indeed
-an unbound solution and cannot be extrapolated using this tool."""
-        raise ValueError(msg.format(fname, cube.energy, cube.energy-hartree_avg))
+        msg = """\
+Trying to extrapolate unbound (=free electron) state {s}.
+No need to extrapolate this state or states at higher energies.
+
+Details: The extrapolation uses the average Hartree potential at the
+extrapolation plane as the potential reference. The energy {en:.2f} eV of state
+  {s} 
+lies {diff:.2f} eV above this value, thus making it an unbound state. While
+your basis set may (or may not) be able to describe unbound states, they
+certainly don't decay exponentially when moving away from the sample surface
+and therefore cannot be extrapolated."""
+        raise ValueError(msg.format(s=fname, en=cube.energy, diff=cube.energy-hartree_avg))
 
     fourier = np.fft.rfft2(plane)
     nKX, nKY = fourier.shape
