@@ -121,38 +121,39 @@ for vlist in [pos_bias, neg_bias]:
                 e = l.energy
                 o = l.occupation
 
-                # If we need this level
-                if hasattr(l, 'used'):
-                    break
-                if e*v >= 0 and e*v < v**2:
-                    n_to_sum += 1
-                    # find cube file
-                    found = False
-                    for cindex, c in enumerate(cubes):
-                        if c.wfn == lindex+1 and c.spin == spin+1:
-                            found = True
-                            print("Reading cube file for spin {s}, energy {e:.6f} eV, occupation {o}"\
-                                  .format(s=spin+1,e=e, o=o))
+                # If we don't need this level, continue
+                if hasattr(l, 'used') or e*v < 0 or np.abs(e) >= np.abs(v):
+                    continue
 
-                            # Make local copy of cube file and then read
-                            tmp = cp2k.WfnCube.from_cube(c)
-                            tmp.read_cube_file(tmp.filename,read_data=True)
+                n_to_sum += 1
 
-                            # each cube file and corresponding level 
-                            # needs to be read only once.
-                            l.used = True
-                            #c.used = True
+                # find cube file
+                found = False
+                for cindex, c in enumerate(cubes):
+                    if c.wfn == lindex+1 and c.spin == spin+1:
+                        found = True
+                        print("Reading cube file for spin {s}, energy {e:.6f} eV, occupation {o}"\
+                              .format(s=spin+1,e=e, o=o))
 
-                            if(not args.psi_squared):
-                                tmp.data = np.square(tmp.data)
-                            # For STM at zero temperature, 
-                            # the occupation of the level in the calculation is irrelevant
-                            # tmp *= o
-                            sumcube += tmp
-                            break
+                        # Make local copy of cube file and then read
+                        tmp = cp2k.WfnCube.from_cube(c)
+                        tmp.read_cube_file(tmp.filename,read_data=True)
 
-                    if not found:
-                        print("Missing cube file for spin {s}, energy {e:.6f} eV, occupation {o}"\
+                        # each cube file and corresponding level 
+                        # needs to be read only once.
+                        l.used = True
+                        #c.used = True
+
+                        if(not args.psi_squared):
+                            tmp.data = np.square(tmp.data)
+                        # For STM at zero temperature, 
+                        # the occupation of the level in the calculation is irrelevant
+                        # tmp *= o
+                        sumcube += tmp
+                        break
+
+                if not found:
+                    print("Missing cube file for spin {s}, energy {e:.6f} eV, occupation {o}"\
                                .format(s=spin+1,e=e,o=o))
         if n_to_sum == 0:
             print("No new cubes for bias {:+4.3f}".format(v))
