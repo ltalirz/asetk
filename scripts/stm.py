@@ -151,22 +151,20 @@ for fname in args.stmcubes:
                     replica=args.replicate, resample=resample)
 
         # for details of plane object, see asetk/format/cube.py
-        data = plane.data
-        imdata = plane.imdata
         extent = plane.extent
 
         if args.format == 'plain':
             datafile = planefile + '.dat'
             print("Writing {} ".format(datafile))
-            np.savetxt(datafile, data, header=header)
+            np.savetxt(datafile, plane.data, header=header)
         elif args.format == 'igor':
             igorwave = igor.Wave2d(
-                    data=data,
+                    data=plane.data,
                     xmin=extent[0],
-                    xmax=extent[1],
+                    xdelta=np.linalg.norm(plane.dx),
                     xlabel='x [Angstroms]',
                     ymin=extent[2],
-                    ymax=extent[3],
+                    ydelta=np.linalg.norm(plane.dy),
                     ylabel='y [Angstroms]',
             )
             datafile = planefile + '.itx'
@@ -176,6 +174,7 @@ for fname in args.stmcubes:
             print("Error: Unknown format {}.".format(args.format))
 
         if args.plot:
+            imdata = plane.imdata
             plotfile = planefile + '.png'
             print("Plotting into {} ".format(plotfile))
             fig = plt.figure()
