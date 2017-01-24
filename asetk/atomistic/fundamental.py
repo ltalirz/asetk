@@ -224,7 +224,7 @@ class EnergyLevels(object):
 
         # Encoding the discretized energy in the array index i makes the code much faster.
         # Create dos of delta-peaks to be folded with Gaussian
-        DOSdelta = np.array([0.0 for j in E])
+        DOSdelta = np.zeros(len(E))
         for level in self.levels:
             e = level.energy
             w = level.weight if level.weight else 1.0
