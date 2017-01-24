@@ -34,6 +34,13 @@ class Spectrum(object):
         tmp.read_from_output(fname)
         return tmp
 
+    @classmethod
+    def from_pdos(cls, fname):
+        """Creates Spectrum from projected density of states"""
+        tmp = Spectrum()
+        tmp.read_from_pdos(fname)
+        return tmp
+
     @property
     def energies(self):
         """Returns list of energy levels of all spins."""
@@ -246,6 +253,34 @@ class Spectrum(object):
             levels = fu.EnergyLevels(energies=E,fermi=fermi)
             self.energylevels.append(levels)
             self.spins.append(spin)
+
+    def read_from_pdos(self, fname):
+        """Reads Spectrum from projected density of states"""
+	# format: id energy occupation s py pz px d-2 d-1 d0 d+1 d+2 f-3 f-2 f-1 f0 f+1 f+2 f+3
+	A = np.genfromtxt(fname, skip_header=2)
+	print(A.shape)
+	#A = np.genfromtxt(fname, skip_header=2, dtype=[('E','f'),('s','f'),('p','f'),('d','f')], usecols=[1, 3, 4, 5])
+	#energies = A['E'] * atc.Ha / atc.eV
+	#weights = A['s'] + A['p'] + A['d']
+
+	energies = A[:,1] * atc.Ha / atc.eV
+	occupations = np.array(A[:,2], dtype=int)
+        weights = np.sum(A[:,3:], axis=1)
+
+	# needed only for fermi energy
+        s = open(fname, 'r').readline()
+	print(s)
+	fermiregex = 'E\(Fermi\) =\s+([-\d\.]+) a.u.'
+	match = re.search(fermiregex, s)
+	if not match:
+            raise ValueError("Unable to parse Fermi energy from pdos file. Setting to zero.")
+	    fermi = 0
+        else:
+            fermi = float(match.group(1)) * atc.Ha / atc.eV
+
+        self.energylevels = [fu.EnergyLevels(energies=energies, 
+            occupations=occupations, weights=weights, fermi=fermi)]
+        self.spins = [0]
 
 class WfnCube(cube.Cube):
     """Gaussian cube file written by CP2K
