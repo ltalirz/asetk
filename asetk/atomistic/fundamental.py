@@ -169,7 +169,7 @@ class EnergyLevels(object):
     def __str__(self):
         text  = "{} energy levels".format(len(self.levels))
         if self.fermi:
-            text += ", Fermi energy {} eV".format(self.fermi)
+            text += ", Fermi energy {:.3f} eV".format(self.fermi)
         if all(o is not None for o in self.occupations):
             text += ", occupations specified"
         return text

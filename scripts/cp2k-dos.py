@@ -80,11 +80,16 @@ if args.sigma:
 for e,s in zip(spectrum.energylevels, spectrum.spins):
     E, DOS = e.dos(bmethod=args.bmethod, FWHM=args.FWHM, bepsilon=args.bepsilon, delta_e = args.delta)
 
+    dosint = np.sum(DOS) * args.delta
+    print("Integrated DOS spin {}: {:.3f} electrons".format(s+1,dosint))
+    dosmax = np.max(DOS)
+    print("Maximum DOS spin {}: {:.3e} electrons / eV".format(s+1,dosmax))
+
     # Write dos to file
     if args.to_file:
         header = "DOS from {}, FWHM={} eV, spin={}\n E [eV]             DOS"\
-                .format(args.out, args.FWHM, s)
-        np.savetxt("dos_spin{}.dat".format(s), 
+                .format(args.out, args.FWHM, s+1)
+        np.savetxt("dos_spin{}.dat".format(s+1), 
                    np.array(zip(E,DOS)), header=header)
 
     # Plot DOS
@@ -102,13 +107,12 @@ for e,s in zip(spectrum.energylevels, spectrum.spins):
         plt.plot(np.zeros(len(energies)), energies, 'ro') 
 
         plt.xticks([])
-        plt.xlim([0, np.max(DOS)])
+        plt.xlim([0, dosmax])
         plt.ylim(fermi-args.window, fermi+args.window)
         plt.ylabel('E [eV]')
 
 if args.plot:
     plt.legend()
-    plt.savefig("spin_{}_dos.png".format(s, args.out),
-                dpi=200, transparent=True)
+    plt.savefig("dos.png", dpi=300, transparent=True)
 
 
