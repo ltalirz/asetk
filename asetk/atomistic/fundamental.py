@@ -13,10 +13,11 @@ class EnergyLevel(object):
 
     """An energy level"""
 
-    def __init__(self, energy, occupation=1.0, wfn=None):
+    def __init__(self, energy, occupation=1.0, wfn=None, weight=None):
         """Set energy and occupation."""
         self.energy = energy
         self.occupation = occupation
+        self.weight = weight
         self.wfn = wfn
 
 class EnergyLevels(object):
@@ -30,19 +31,24 @@ class EnergyLevels(object):
     - removed setFermiZero
     """
 
-    def __init__(self, energies=None, occupations=None, wfns=None, fermi=None):
+    def __init__(self, energies=None, occupations=None, weights=None, wfns=None, fermi=None):
         """Fill object with levels and Fermi energy."""
         self.levels = []
         self.fermi = fermi
 
+        if energies is None:
+            raise ValueError("No energies specified")
+
+        n = len(energies)
+
         # If occupations are specified, take them
-        if energies is not None and occupations is not None:
-            for i in range(len(energies)):
+        if occupations is not None:
+            for i in range(n):
                 tmp = EnergyLevel(energies[i], occupations[i])
                 self.levels.append(tmp)
         # If we just have a fermi energy, create occupations
-        elif energies is not None and fermi is not None:
-            for i in range(len(energies)):
+        elif fermi is not None:
+            for i in range(n):
                 if energies[i] < fermi:
                     tmp = EnergyLevel(energies[i], 1.0)
                 else:
@@ -51,17 +57,25 @@ class EnergyLevels(object):
                 self.levels.append(tmp)
         # If neither fermi nor occupations are set...
         elif energies is not None:
-            for i in range(len(energies)):
+            for i in range(n):
                 tmp = EnergyLevel(energies[i], None)
                 self.levels.append(tmp)
 
         if wfns is not None:
-            if len(wfns) == len(self.levels):
-                for i in range(len(wfns)):
+            if len(wfns) == n:
+                for i in range(n):
                     self.levels[i].wfn = wfns[i]
             else:
                 print("Error: Number of wave functions != number or levels")
              
+        if weights is not None:
+            if len(weights) == n:
+                for i in range(n):
+                    self.levels[i].weight = weights[i]
+            else:
+                print("Error: Number of weights != number or levels")
+
+
 
     @property
     def energies(self):
@@ -210,17 +224,16 @@ class EnergyLevels(object):
 
         # Encoding the discretized energy in the array index i makes the code much faster.
         # Create dos of delta-peaks to be folded with Gaussian
-        DOSdelta = np.array([0.0 for j in E])
-        for e in energies:
+        DOSdelta = np.zeros(len(E))
+        for level in self.levels:
+            e = level.energy
+            w = level.weight if level.weight else 1.0
             # In order to be able to fold with tabulated Gaussian, we have to place
             # levels *on* the grid. I.e. level spacing cannot be smaller than deltaE.
             n = int((e-loE)/delta_e)
          
             # Note: DOS should be calculated for unoccupied levels as well!
-            #if o is not None:
-            #    DOSdelta[n] += o
-            #else:
-            DOSdelta[n] += 1
+            DOSdelta[n] += w
         # Convolve with gaussian, keeping same dimension
         # Can be made even faster by using fftconvolve
         DOS = np.convolve(DOSdelta,bprofile, mode='same')

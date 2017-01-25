@@ -10,11 +10,11 @@ import os
 # Define command line parser
 parser = argparse.ArgumentParser(
     description='Produce density of states from CP2K output or .MOLog file')
-parser.add_argument('--version', action='version', version='%(prog)s 28.02.2014')
+parser.add_argument('--version', action='version', version='%(prog)s 24.01.2017')
 parser.add_argument(
     'out',
     metavar='WILDCARD', 
-    help='CP2K output containing energy levels')
+    help='CP2K output containing energy levels (or: .MOLog / .pdos file)')
 parser.add_argument(
     '--plot',
     metavar='BOOL', 
@@ -31,26 +31,26 @@ parser.add_argument(
     metavar='ENERGY',
     default=3,
     type=float,
-    help='plot range [-window,window] around Fermi.')
+    help='plot range [-window,window] around Fermi [eV].')
 parser.add_argument(
     '--delta',
     metavar='ENERGY',
     default=0.001,
     type=float,
-    help='the energy grid spacing')
+    help='the energy grid spacing [eV]')
 parser.add_argument(
     '--sigma',
     metavar='ENERGY',
     default=None,
     type=float,
     help='The sigma of the Gaussian broadening. Equivalent to setting \
-          FWHM = sigma*sqrt(8*ln(2)) (kept for backward compatibility).')
+          FWHM = sigma*sqrt(8*ln(2)) (kept for backward compatibility) [eV].')
 parser.add_argument(
     '--FWHM',
     metavar='ENERGY',
     type=float,
     default=0.1,
-    help='Full-width half-maximum of broadening function.')
+    help='Full-width half-maximum of broadening function [eV].')
 parser.add_argument(
     '--bmethod',
     default='Gaussian',
@@ -68,6 +68,8 @@ args = parser.parse_args()
 lfname, lfext = os.path.splitext(args.out)
 if lfext == '.MOLog':
         spectrum = cp2k.Spectrum.from_mo(args.out)
+elif lfext == '.pdos':
+    spectrum = cp2k.Spectrum.from_pdos(args.out)
 else:
     spectrum = cp2k.Spectrum.from_output(args.out)
 print(spectrum)

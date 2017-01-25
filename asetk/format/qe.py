@@ -1,6 +1,6 @@
 """Classes for use with Quantum ESPRESSO
 
-Representation of a spectrum
+Representation of a spectrum and more
 """
 
 import re
@@ -245,6 +245,55 @@ class Spectrum(object):
 
     def read_from_output(self, prefix):
         return 0;
+
+
+
+class Atoms(fu.Atoms):
+    """Atoms that can be read from QE output"""
+
+    @classmethod
+    def from_save(cls, prefix):
+        tmp = Atoms()
+        tmp.read_from_save(prefix)
+        return tmp
+
+    def read_from_save(self, prefix):
+        """Read from .save directory"""
+
+        savedir = prefix + '.save'
+        if not os.path.exists(savedir):
+            raise IOError("Directory {s} not found.".format(s=savedir))
+
+        dataxml = open(savedir + '/data-file.xml', 'r').read()
+
+        # should be able to match scientific and non-scientific notation
+        floatregex = '-?\d+\.\d+(?:[Ee][+\-]?\d+)?'
+
+        #get lattice parameter
+        alatregex = '<LATTICE_PARAMETER.*?>\s*({f})'.format(f=floatregex)
+        alat = float( re.search(alatregex, dataxml, re.DOTALL).group(1) )
+        alat *= atc.a0  
+
+
+        # get k-points
+        atregex = '<ATOM\.(\d+) SPECIES=\"(\w+\s*)\" INDEX=\"(\d+)\" tau=\"({f}) ({f}) ({f})\" if_pos=\"(\d+)\s+(\d+)\s+(\d+)\"/>'\
+                .format(f=floatregex)
+        atdatas = re.findall(atregex, dataxml)
+
+        symbols = []
+        positions = []
+        for at in atdatas:
+            at_num = at[0]
+            at_sym = at[1].strip()
+            at_index = at[2]
+            at_pos = np.array(at[3:6], dtype=float)
+            at_ifpos = np.array(at[6:9], dtype=int)
+
+            symbols.append(at_sym)
+            #positions.append(at_pos * atc.a0)
+            positions.append(at_pos * atc.a0 / atc.Angstrom)
+
+        self.__init__(positions=positions, symbols=symbols)
 
 
 
