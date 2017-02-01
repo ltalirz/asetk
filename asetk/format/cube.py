@@ -574,7 +574,6 @@ class Cube(object):
         v[dir_index] = dist_exact
         self.atoms.translate(v)
 
-
 class Plane(object):
     """Stores a plane of a cube file.
     
@@ -675,4 +674,29 @@ class Plane(object):
         # (1st index x, 2nd index y), we need to swap
         self.data = resampled.swapaxes(0,1)
 
+
+class STSCube(Cube):
+    """Stores data of a scanning tunneling spectroscopy simulation
+    
+    This is a regular cube file, except that the z-dimension is
+    one of energy.
+    """
+
+    def read_cube_file(self, fname, read_data=False, v=1):
+        """Reads header and/or data of cube file
+        
+        """
+        super(STSCube, self).read_cube_file(fname, read_data, v)
+
+        # undo scaling of z-axis (units are eV)
+        b2A = constants.a0 / constants.Angstrom
+        self.origin[2] /= b2A
+        self.cell[2] /= b2A
+
+    @classmethod
+    def from_file(cls, fname, read_data=False):
+        """Creates Cube from cube file"""
+        tmp = STSCube()
+        tmp.read_cube_file(fname, read_data=read_data)
+        return tmp
     
