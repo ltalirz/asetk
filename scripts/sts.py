@@ -199,7 +199,7 @@ stscube.data = np.zeros(shape, dtype=float)
 # "converted from Angstrom to Bohr"
 a02A = constants.a0 / constants.Angstrom
 stscube.origin[2] = args.vmin * a02A
-stscube.cell[2] = np.array([0,0,args.vmax]) * a02A
+stscube.cell[2] = np.array([0,0,args.vmax - args.vmin]) * a02A
 
 zrange = np.linspace(args.vmin, args.vmax, shape[2])
 
