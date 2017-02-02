@@ -125,6 +125,11 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title("{}".format(c.title))
 
+    if cformat == 'sts_cube':
+        label_text = "U = {:.3f} V"
+    else:
+        label_text = "z = {:.3f}"
+
     z0 = c.origin[dir_index]
     nz = c.data.shape[dir_index]
     dz = np.linalg.norm(c.cell[dir_index]) / nz
@@ -134,7 +139,7 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
 	p = c.get_plane(args.normal,i,return_object=True)
 	im = ax.imshow(p.imdata, norm=plt.Normalize(vmin,vmax), 
             extent=p.extent, cmap=matplotlib.cm.bwr)
-        label = ax.text(0.8, 0.9,"z = {:.3f}".format(z0+i*dz),
+        label = ax.text(0.8, 0.9,label_text.format(z0+i*dz),
              horizontalalignment='center', verticalalignment='center',
              transform = ax.transAxes)
 
