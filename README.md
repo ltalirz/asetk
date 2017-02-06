@@ -8,12 +8,15 @@ atomic structures.
 Formats supported:
 
  * CP2K: STM simulation, STS simulation, wave function extrapolation,
-   reading of energy levels from CP2K output and .MOLog files
- * IGOR Pro: Writing of .itx files
- * Quantum ESPRESSO: Reading of some aspects from data.xml
- * Yambo: Reading of ndb.QP database as well as the yambo output and o.qp files
- * BerkeleyGW: Reading of some aspects of eps0mat.h5
+   reading of energy levels from CP2K output, .MOLog and .pdos files
+ * IGOR Pro: Reading and writing of .itx files
+ * Quantum ESPRESSO: Reading of some aspects from data.xml,
+      convert intermediate format to .cube
+ * Yambo: Reading of ndb.QP, yambo output and o.qp files
+ * BerkeleyGW: Reading parts of eps0mat.h5
+ * Gaussian Cube Format: Reading, writing, slicing, averaging, rolling, plotting
 
+See the ```scripts/``` subdirectory for all stand-alone commandline scripts.
 
 Installation requirements
 -------------------------
@@ -27,20 +30,14 @@ Installation requirements
 Installation instructions
 -------------------------
 
-Let $asetk_root be the directory containing the scripts/ asetk/ subdirectories
+Let ```$asetk_root``` be the directory containing the ```scripts/``` and ```asetk/``` subdirectories
 
- 1. Let your python distribution know where to find the asetk module by adding
-    the $asetk_root directory to the PYTHONPATH environment variable.
-
-    On Linux and MacOS add to your .bashrc
-
-    ``` export PYTHONPATH=$PYTHONPATH:$asetk_root  ```
- 2. Let your system know where to find the scripts by adding the scripts/
-    directory to the PATH environment variable.
-
-    On Linux and MacOS add to your .bashrc
-
-    ``` export PATH=$PATH:$asetk_root/scripts  ```
+```bash
+# 1. Let python know where to find asetk
+echo "export PYTHONPATH=$PYTHONPATH:$asetk_root" >> ~/.bashrc
+# 2. Add scripts to our system PATH
+echo "export PATH=$PATH:$asetk_root/scripts" >> ~/.bashrc
+```
 
 License information
 -------------------
@@ -48,11 +45,10 @@ License information
 The toolkit is released under the MIT license.
 Note that ASE is released under the GNU Lesser General Public License (LGPL).
 
-
 If your scientific publication has benefited from the use of asetk,
 please consider an acknowledgement through the following citation
 
-*asetk, https://github.com/ltalirz/asetk, Copyright Leopold Talirz 2013-2016*
+*Talirz, L., asetk, version 0.3; https://github.com/ltalirz/asetk*
 
 Contact information
 -------------------
