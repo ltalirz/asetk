@@ -2,7 +2,7 @@ asetk
 =====
 
 Toolkit for working with atomic and electronic structure data,
-making use of the Atomistic Simulation Environment (ASE) for
+built on top of the Atomistic Simulation Environment (ASE) for
 atomic structures.
 
 Formats supported:
@@ -16,7 +16,8 @@ Formats supported:
  * BerkeleyGW: Reading parts of eps0mat.h5
  * Gaussian Cube Format: Reading, writing, slicing, averaging, rolling, plotting
 
-See the ```scripts/``` subdirectory for all stand-alone commandline scripts.
+See the ```scripts/``` subdirectory for all stand-alone command line scripts
+(and run ```script.py -h``` to find out what it does).
 
 Installation requirements
 -------------------------
@@ -35,8 +36,10 @@ Let ```$asetk_root``` be the directory containing the ```scripts/``` and ```aset
 ```bash
 # 1. Let python know where to find asetk
 echo "export PYTHONPATH=$PYTHONPATH:$asetk_root" >> ~/.bashrc
-# 2. Add scripts to our system PATH
+# 2. Add scripts to your system PATH
 echo "export PATH=$PATH:$asetk_root/scripts" >> ~/.bashrc
+
+source ~/.bashrc
 ```
 
 License information
