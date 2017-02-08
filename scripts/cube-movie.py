@@ -89,16 +89,16 @@ parser.add_argument(
     help='Specify path to ffmpeg (required for mp4 movies).')
 parser.add_argument(
     '--atom_sketch',
-    metavar='STRING',
-    default='False',
-    help='If True overlay of atomic sketch'
+    dest='atom_sketch',
+    action='store_true',
+    help='If specified, overlay sketch of atoms on top of images.'
 )
 parser.add_argument(
     '--atom_zcut',
-    metavar='VALUE',
-    default=100.0,
+    metavar='DISTANCE',
+    default=None,
     type=float,
-    help='cuts atoms below zcut in the atomic sketch'
+    help='If specified, cuts atoms below zcut for the atomic sketch.'
 )
 
 
@@ -135,8 +135,8 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
 
     fig, (ax) = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(6,5))
     plt.subplots_adjust(left=0.10)
-    ax.set_xlabel('x [${\AA}$]')
-    ax.set_ylabel('y [${\AA}$]')
+    ax.set_xlabel('x [$\mathrm{\AA}$]')
+    ax.set_ylabel('y [$\mathrm{\AA}$]')
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title("{}".format(c.title))
@@ -150,21 +150,17 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
     nz = c.data.shape[dir_index]
     dz = np.linalg.norm(c.cell[dir_index]) / nz
 
-######plot atomic sketch
+    if args.atom_sketch:
 
-    if args.atom_sketch=='True':
-        if args.atom_zcut < 100 :
-            xsketch=[xx[0]  for xx in c.atoms.positions if xx[2] > args.atom_zcut]
-            ysketch=[xx[1]  for xx in c.atoms.positions if xx[2] > args.atom_zcut]
-            nsketch=[c.atoms.numbers[i]   for i in range(len(c.atoms.positions)) if c.atoms.positions[i][2] > args.atom_zcut]
-            sketch=zip(nsketch,xsketch,ysketch)
+        if args.atom_zcut is None:
+            draw_atoms = c.atoms
+        else:
+            draw_atoms = [at for at in c.atoms if at.position[2] > args.atom_zcut]
 
-        circ=[]
-        for a in sketch:
-            circ.append(plt.Circle((a[1],a[2] ), covalent_radii[a[0]], color=cpk_colors[a[0]],fill=False,clip_on=True))
-        for thecirc in circ:
-            ax.add_artist(thecirc)
-######end plot atomic sketch
+        for at in draw_atoms:
+            x,y,z = at.position
+            n = at.number
+            ax.add_artist(plt.Circle((x,y), covalent_radii[n], color=cpk_colors[n], fill=False, clip_on=True))
 
     ims = []
     for i in range(nz):
@@ -197,4 +193,3 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
         writer = animation.FFMpegWriter(fps=15, metadata=dict(artist='Me'), bitrate=1800)
         #writer = animation.MencoderWriter(fps=15, bitrate=1800)
         im_ani.save(mfile, writer=writer)
-
