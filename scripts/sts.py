@@ -192,7 +192,7 @@ stscube.comment = "Range [{:4.2f} V, {:4.2f} V], vstep {:4.3f} V, FWHM {:4.3f} V
                .format(args.vmin, args.vmax, args.vstep, args.FWHM, args.bmethod)
 # adjust z-dimension for energy
 shape = np.array(stscube.data.shape)
-shape[2] = int( (args.vmax - args.vmin) / args.vstep) + 1
+shape[2] = np.rint( (args.vmax - args.vmin) / args.vstep) + 1
 stscube.data = np.zeros(shape, dtype=float)
 
 # During export, these numbers will be
