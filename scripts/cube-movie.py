@@ -135,8 +135,8 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
 
     fig, (ax) = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(6,5))
     plt.subplots_adjust(left=0.10)
-    ax.set_xlabel('x [$\AA$]')
-    ax.set_ylabel('y [$\AA$]')
+    ax.set_xlabel('x [${\AA}$]')
+    ax.set_ylabel('y [${\AA}$]')
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title("{}".format(c.title))
