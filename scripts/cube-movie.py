@@ -9,6 +9,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from ase.data import covalent_radii
+from ase.data.colors import cpk_colors
 
 import asetk.format.cube as cube
 import asetk.format.qe as qe
@@ -85,6 +87,19 @@ parser.add_argument(
     metavar='FILEPATH',
     default='/opt/local/bin/ffmpeg',
     help='Specify path to ffmpeg (required for mp4 movies).')
+parser.add_argument(
+    '--atom_sketch',
+    metavar='STRING',
+    default='False',
+    help='If True overlay of atomic sketch'
+)
+parser.add_argument(
+    '--atom_zcut',
+    metavar='VALUE',
+    default=100.0,
+    type=float,
+    help='cuts atoms below zcut in the atomic sketch'
+)
 
 
 args = parser.parse_args()
@@ -112,6 +127,7 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
         tmp = qe.QECube.from_file(fname, read_data=True)
         c = tmp.to_cube()
 
+
     name = os.path.splitext(fname)[0]
 
     vmax = np.amax(c.data)
@@ -119,8 +135,8 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
 
     fig, (ax) = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(6,5))
     plt.subplots_adjust(left=0.10)
-    ax.set_xlabel('x [$a_0$]')
-    ax.set_ylabel('y [$a_0$]')
+    ax.set_xlabel('x [${\AA}$]')
+    ax.set_ylabel('y [${\AA}$]')
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title("{}".format(c.title))
@@ -133,6 +149,22 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
     z0 = c.origin[dir_index]
     nz = c.data.shape[dir_index]
     dz = np.linalg.norm(c.cell[dir_index]) / nz
+
+######plot atomic sketch
+
+    if args.atom_sketch=='True':
+        if args.atom_zcut < 100 :
+            xsketch=[xx[0]  for xx in c.atoms.positions if xx[2] > args.atom_zcut]
+            ysketch=[xx[1]  for xx in c.atoms.positions if xx[2] > args.atom_zcut]
+            nsketch=[c.atoms.numbers[i]   for i in range(len(c.atoms.positions)) if c.atoms.positions[i][2] > args.atom_zcut]
+            sketch=zip(nsketch,xsketch,ysketch)
+
+        circ=[]
+        for a in sketch:
+            circ.append(plt.Circle((a[1],a[2] ), covalent_radii[a[0]], color=cpk_colors[a[0]],fill=False,clip_on=True))
+        for thecirc in circ:
+            ax.add_artist(thecirc)
+######end plot atomic sketch
 
     ims = []
     for i in range(nz):
