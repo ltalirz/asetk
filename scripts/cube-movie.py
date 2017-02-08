@@ -136,20 +136,20 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
 
     ims = []
     for i in range(nz):
-	p = c.get_plane(args.normal,i,return_object=True)
-	im = ax.imshow(p.imdata, norm=plt.Normalize(vmin,vmax), 
+        p = c.get_plane(args.normal,i,return_object=True)
+        im = ax.imshow(p.imdata, norm=plt.Normalize(vmin,vmax), 
             extent=p.extent, cmap=matplotlib.cm.bwr)
         label = ax.text(0.8, 0.9,label_text.format(z0+i*dz),
              horizontalalignment='center', verticalalignment='center',
              transform = ax.transAxes)
 
         if i == 0:
-	    plt.colorbar(im, cax=cax)
+            plt.colorbar(im, cax=cax)
 
         if args.format=='png':
-	     outname = "{}_{}_{:04d}.png".format(name,args.normal,i)
-	     print("Saving {}".format(outname), end='\r')
-	     sys.stdout.flush()
+             outname = "{}_{}_{:04d}.png".format(name,args.normal,i)
+             print("Saving {}".format(outname), end='\r')
+             sys.stdout.flush()
              plt.savefig(outname, dpi=200)
              label.remove()
              im.remove()
