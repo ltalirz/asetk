@@ -12,11 +12,11 @@ class Xyz(object):
     """
 
     def __init__(self, filename=None, comment=None, 
-                 atoms=None):
+                 frames=None):
         """Standard constructor, all parameters default to None."""
         self.filename = filename
         self.comment = comment
-        self.atoms = atoms
+        self.frames = frames
 
     @classmethod
     def from_xyz(cls, xyz):
@@ -25,14 +25,14 @@ class Xyz(object):
         return tmp
 
     @classmethod
-    def from_file(cls, fname):
+    def from_file(cls, fname, index=None):
         """Creates Xyz from .xyz file"""
         tmp = Xyz()
-        tmp.read(fname)
+        tmp.read(fname, index)
         return tmp
 
     def read(self, fileobj, index=None):
-        """ Reads a trajectory from an xyz file.
+        """Reads a trajectory from an xyz file.
 
         This function returns a list of ase.atoms.Atoms objects.
         The original ase.io.xyz.read_xyz function was only capable
@@ -49,7 +49,7 @@ class Xyz(object):
         else:
             natoms = len(lines)
 
-        images = []
+        frames = []
         while len(lines) >= natoms:
             positions = []
             symbols = []
@@ -58,20 +58,33 @@ class Xyz(object):
                 symbol = symbol.lower().capitalize()
                 symbols.append(symbol)
                 positions.append([float(x), float(y), float(z)])
-            images.append(Atoms(symbols=symbols, positions=positions))
+            frames.append(Atoms(symbols=symbols, positions=positions))
             del lines[:natoms + 2]
 
         if index is None:
-            return images
+            self.frames = frames
         else:
-            return images[index]
+            self.frames = [frames[index]]
+
+    @classmethod
+    def read_atoms(cls, fileobj, index=None):
+        """Reads a trajectory from an xyz file.
+
+        Does not return an xyz instance but simply the list of atoms.
+        """
+        tmp = Xyz.from_file(fileobj, index)
+        if len(tmp.frames) == 1:
+            return tmp.frames[0]
+        else:
+            return tmp.frames
+
 
     def string(self):
         """Construct and return string for .xyz file"""
         s  = ''
-        s += '  {n}\n'.format(n=len(self.atoms))
+        s += '  {n}\n'.format(n=len(self.frames))
         s += self.comment + '\n'
-        for atom in self.atoms:
+        for atom in self.frames:
             s += '{s:4} {x:<16.10} {y:<16.10} {z:<16.10}\n' \
                  .format(s=atom.s, x=atom.x, y=atom.y, z=atom.z)
 
@@ -81,7 +94,7 @@ class Xyz(object):
         """Write content of object to .xyz file"""
         if fname is not None:
             self.fname = fname
-        f=open(self.outname, 'w')
+        f=open(self.fname, 'w')
         f.write(self.string())
         f.close()
 
