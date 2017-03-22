@@ -181,10 +181,12 @@ class Wave2d(Wave):
 
     default_parameters = dict(
         xmin = 0.0,
-        xdelta = 1.0,
+        xdelta = None,
+        xmax = None,
         xlabel = 'x',
         ymin = 0.0,
-        ydelta = 1.0,
+        ydelta = None,
+        ymax = None,
         ylabel = 'y',
     )
  
@@ -210,6 +212,18 @@ class Wave2d(Wave):
 
         if axes is None:
             p=self.parameters
+
+            nx, ny = self.data.shape
+            if p['xmax'] is None:
+                p['xmax'] = p['xdelta'] * nx
+            elif p['xdelta'] is None:
+                p['xdelta'] = p['xmax'] / nx
+
+            if p['ymax'] is None:
+                p['ymax'] = p['ydelta'] * ny
+            elif p['ydelta'] is None:
+                p['ydelta'] = p['ymax'] / ny
+
             x = Axis(symbol='x', min=p['xmin'], delta=p['xdelta'], 
                      unit=p['xlabel'], wavename=self.name)
             y = Axis(symbol='y', min=p['ymin'], delta=p['ydelta'], 
