@@ -14,6 +14,7 @@ from ase.data.colors import cpk_colors
 
 import asetk.format.cube as cube
 import asetk.format.qe as qe
+import asetk.format.igor as igor
 
 # Define command line parser
 parser = argparse.ArgumentParser(
@@ -39,7 +40,6 @@ parser.add_argument(
     help='STS cube files')
 parser.add_argument(
     '--normal',
-    nargs='+',
     metavar='DIRECTION',
     default='z',
     help='Direction along which to make the movie. May be "x", "y" or "z".')
@@ -72,7 +72,8 @@ parser.add_argument(
     '--format',
     metavar='STRING',
     default='mp4',
-    help='Specifies format of output. Can be \'png\' (collection of pngs) or \'mp4\' (movie).'
+    help='Specifies format of output. Can be \'png\' (collection of pngs) or\
+    \'igor\' (igor text format of Igor Pro) or \'mp4\' (movie).'
 )
 parser.add_argument(
     '--plotrange',
@@ -104,11 +105,10 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-if args.format not in ['png','mp4']:
+if args.format not in ['png','mp4','igor']:
     raise ValueError("Only png and mp4 format currently supported.")
 
-plt.rcParams['animation.ffmpeg_path'] = args.ffmpeg_path
-
+plt.rcParams[u'animation.ffmpeg_path'] = args.ffmpeg_path.decode('utf8')
 
 dir_index = cube.Cube.dir_indices[args.normal]
 
@@ -165,24 +165,39 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
     ims = []
     for i in range(nz):
         p = c.get_plane(args.normal,i,return_object=True)
-        im = ax.imshow(p.imdata, norm=plt.Normalize(vmin,vmax), 
-            extent=p.extent, cmap=matplotlib.cm.bwr)
-        label = ax.text(0.8, 0.9,label_text.format(z0+i*dz),
-             horizontalalignment='center', verticalalignment='center',
-             transform = ax.transAxes)
 
-        if i == 0:
-            plt.colorbar(im, cax=cax)
+        if args.format in ['png','mp4']:
+            im = ax.imshow(p.imdata, norm=plt.Normalize(vmin,vmax), 
+                extent=p.extent, cmap=matplotlib.cm.bwr)
+            label = ax.text(0.8, 0.9,label_text.format(z0+i*dz),
+                 horizontalalignment='center', verticalalignment='center',
+                 transform = ax.transAxes)
 
-        if args.format=='png':
-             outname = "{}_{}_{:04d}.png".format(name,args.normal,i)
-             print("Saving {}".format(outname), end='\r')
-             sys.stdout.flush()
-             plt.savefig(outname, dpi=200)
-             label.remove()
-             im.remove()
-        elif args.format=='mp4':
-             ims.append( (im, label,) )
+            if i == 0:
+                plt.colorbar(im, cax=cax)
+
+            if args.format=='png':
+                 outname = "{}_{}_{:04d}.png".format(name,args.normal,i)
+                 print("Saving {}".format(outname), end='\r')
+                 sys.stdout.flush()
+                 plt.savefig(outname, dpi=200)
+                 label.remove()
+                 im.remove()
+            elif args.format=='mp4':
+                 ims.append( (im, label,) )
+        elif args.format == 'igor':
+            igorwave = igor.Wave2d(
+                    data=p.data,
+                    xmin=p.extent[0],
+                    xmax=p.extent[1],
+                    xlabel='x [Angstroms]',
+                    ymin=p.extent[2],
+                    ymax=p.extent[3],
+                    ylabel='y [Angstroms]',
+            )
+	    outname = "{}_{}_{:04d}.itx".format(name,args.normal,i)
+            print("Writing {} ".format(outname))
+            igorwave.write(outname)
 
 
     if args.format =='mp4':
