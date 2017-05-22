@@ -189,10 +189,10 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
             igorwave = igor.Wave2d(
                     data=p.data,
                     xmin=p.extent[0],
-                    xmax=p.extent[1],
+                    xdelta=np.linalg.norm(p.dx),
                     xlabel='x [Angstroms]',
                     ymin=p.extent[2],
-                    ymax=p.extent[3],
+                    ydelta=np.linalg.norm(p.dy),
                     ylabel='y [Angstroms]',
             )
 	    outname = "{}_{}_{:04d}.itx".format(name,args.normal,i)
