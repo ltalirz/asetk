@@ -71,7 +71,7 @@ parser.add_argument(
 parser.add_argument(
     '--format',
     metavar='STRING',
-    default='mp4',
+    default='png',
     help='Specifies format of output. Can be \'png\' (collection of pngs) or\
     \'igor\' (igor text format of Igor Pro) or \'mp4\' (movie).'
 )
@@ -195,8 +195,8 @@ for fname in args.cubes + args.qe_cubes + args.sts_cubes:
                     ydelta=np.linalg.norm(p.dy),
                     ylabel='y [Angstroms]',
             )
-	    outname = "{}_{}_{:04d}.itx".format(name,args.normal,i)
-            print("Writing {} ".format(outname))
+            outname = "{}_{}_{:04d}.itx".format(name,args.normal,i)
+            print("Writing {} ".format(outname), end='\r')
             igorwave.write(outname)
 
 
