@@ -51,7 +51,7 @@ Note that ASE is released under the GNU Lesser General Public License (LGPL).
 If your scientific publication has benefited from the use of asetk,
 please consider an acknowledgement through the following citation
 
-*Talirz, L., asetk, version 0.3; https://github.com/ltalirz/asetk*
+*Talirz, L., asetk; https://github.com/ltalirz/asetk, [![DOI](https://zenodo.org/badge/15176282.svg)](https://zenodo.org/badge/latestdoi/15176282)*
 
 Contact information
 -------------------
