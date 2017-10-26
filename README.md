@@ -16,30 +16,17 @@ Formats supported:
  * BerkeleyGW: Reading parts of eps0mat.h5
  * Gaussian Cube Format: Reading, writing, slicing, averaging, rolling, plotting
 
-See the ```scripts/``` subdirectory for all stand-alone command line scripts
-(and run ```script.py -h``` to find out what it does).
+See the `scripts/` subdirectory for all stand-alone command line scripts
+(and run `<script>.py -h` to find out what it does).
 
-Installation requirements
--------------------------
-
- * Python 2.7.5 or greater - www.python.org
- * NumPy 1.9 or greater - www.numpy.org
- * SciPy 0.14 or greater - www.scipy.org
- * matplotlib 1.4 or greater - [matplotlib.org](matplotlib.org)
- * ASE 3.8.1 or greater - [wiki.fysik.dtu.dk/ase](wiki.fysik.dtu.dk/ase)
 
 Installation instructions
 -------------------------
 
-Let ```$asetk_root``` be the directory containing the ```scripts/``` and ```asetk/``` subdirectories
-
 ```bash
-# 1. Let python know where to find asetk
-echo "export PYTHONPATH=$PYTHONPATH:$asetk_root" >> ~/.bashrc
-# 2. Add scripts to your system PATH
-echo "export PATH=$PATH:$asetk_root/scripts" >> ~/.bashrc
-
-source ~/.bashrc
+git clone https://github.com/ltalirz/asetk
+cd asetk
+pip install -e .
 ```
 
 License information

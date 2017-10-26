@@ -256,9 +256,10 @@ class Wave2d(Wave):
          * dir  : 'x', 'y' or 'z'
          * index: index of plane to be taken
          """
-        tmp = Wave3d()
-        tmp.read_from_cube(fname)
-        return tmp
+        return NotImplementedError("Not yet implemented")
+        #tmp = Wave3d()
+        #tmp.read_from_cube(fname)
+        #return tmp
 
     def read_from_cube(self, cube, dir, index, fname=None):
         # To be implemented
