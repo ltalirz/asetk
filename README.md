@@ -25,8 +25,7 @@ Installation instructions
 
 ```bash
 git clone https://github.com/ltalirz/asetk
-cd asetk
-pip install -e .
+pip install -e asetk
 ```
 
 License information
