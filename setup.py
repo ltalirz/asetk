@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
-import json
 import glob
 
 scripts = glob.glob('scripts/*.py')
@@ -11,12 +10,11 @@ if __name__ == '__main__':
         name="asetk",
         author="Leopold Talirz",
         author_email="leopold.talirz@gmail.com",
-        description="Toolkit for working with atomic and electronic structure data, built on top of the Atomistic Simulation Environment (ASE) for atomic structures.",
+        description="Toolkit for working with atomic and electronic structure \
+                data, built on top of the Atomistic Simulation Environment (ASE) for atomic structures.",
         url="https://github.com/ltalirz/asetk",
         license="MIT",
-        classifiers= [
-            "Programming Language :: Python"
-        ],
+        classifiers=["Programming Language :: Python"],
         version="0.3.0",
         install_requires=[
             "numpy >= 1.9",
@@ -25,4 +23,9 @@ if __name__ == '__main__':
             "ase >= 3.8.4",
         ],
         scripts=scripts,
-    )
+        extras_require={
+            'pre-commit': [
+                'pre-commit==1.3.0', 'yapf==0.19.0', 'prospector==0.12.7',
+                'pylint==1.7.4'
+            ]
+        })
