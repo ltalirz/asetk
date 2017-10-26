@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/ltalirz/asetk.svg?branch=master)](https://travis-ci.org/ltalirz/asetk)
+[![DOI](https://zenodo.org/badge/15176282.svg)](https://zenodo.org/badge/latestdoi/15176282)
+
 asetk
 =====
 
