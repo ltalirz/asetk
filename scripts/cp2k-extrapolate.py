@@ -139,7 +139,7 @@ for fname in args.cubes:
         weighted_hartree_avg = np.sum(weighted_hartree)
         print("Weighted average of Hartree potential: {:+.4f} eV" \
             .format(weighted_hartree_avg/eV2Ha))
-        hartree = weighted_hartree_avg
+        hartree = weighted_hartree_avg/eV2Ha
 
     # Note: Working in Hartree atomic units here
     E = (cube.energy - hartree) * eV2Ha * np.dot(cube.dz, cube.dz) / a02A**2
