@@ -91,9 +91,11 @@ else:
             args.height, verbose=True)
     np.savetxt(hartree_planefile, hartree_plane)
 
-hartree_avg = np.mean(hartree_plane) / eV2Ha
-hartree_min = np.min(hartree_plane) / eV2Ha
-hartree_max = np.max(hartree_plane) / eV2Ha
+hartree_plane /= eV2Ha
+
+hartree_avg = np.mean(hartree_plane)
+hartree_min = np.min(hartree_plane)
+hartree_max = np.max(hartree_plane)
 print("Hartree potential on extrapolation surface:")
 print("   min {:+.4f} eV, max {:+4f} eV, avg {:+.4f} eV" \
         .format(hartree_min, hartree_max, hartree_avg))
@@ -138,7 +140,7 @@ for fname in args.cubes:
         weighted_hartree = hartree_plane * density_plane
         weighted_hartree_avg = np.sum(weighted_hartree)
         print("Weighted average of Hartree potential: {:+.4f} eV" \
-            .format(weighted_hartree_avg/eV2Ha))
+            .format(weighted_hartree_avg))
         hartree = weighted_hartree_avg
 
     # Note: Working in Hartree atomic units here
@@ -195,4 +197,3 @@ and therefore cannot be extrapolated."""
 
 print("")
 print("Job done.")
-    
